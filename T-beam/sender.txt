@@ -1,0 +1,91 @@
+#include <BluetoothA2DPSink.h>
+#include <arduinoFFT.h>
+#include <LoRa.h>
+
+#define SAMPLES 512
+#define NUM_BANDS 8
+#define BTN_NEXT 12
+#define BTN_PREV 13
+
+BluetoothA2DPSink a2dp_sink;
+arduinoFFT FFT = arduinoFFT();
+
+double vReal[SAMPLES];
+double vImag[SAMPLES];
+uint8_t bands[NUM_BANDS];
+uint8_t mode = 0;
+
+struct FFTPacket {
+  uint32_t timestamp;
+  uint8_t bands[NUM_BANDS];
+  uint16_t fundamentalFreq;
+  uint8_t mode;
+};
+
+void audio_data_callback(const uint8_t *data, uint32_t len) {
+  static int index = 0;
+  for (uint32_t i = 0; i < len && index < SAMPLES; i += 2) {
+    int16_t sample = (int16_t)(data[i] | (data[i + 1] << 8));
+    vReal[index] = sample;
+    vImag[index] = 0;
+    index++;
+  }
+
+  if (index >= SAMPLES) {
+    FFT.Windowing(vReal, SAMPLES, FFT_WIN_TYP_HAMMING, FFT_FORWARD);
+    FFT.Compute(vReal, vImag, SAMPLES, FFT_FORWARD);
+    FFT.ComplexToMagnitude(vReal, vImag, SAMPLES);
+
+    // Regrouper les bandes FFT
+    for (int i = 0; i < NUM_BANDS; i++) {
+      double sum = 0;
+      for (int j = i * (SAMPLES / 2 / NUM_BANDS); j < (i + 1) * (SAMPLES / 2 / NUM_BANDS); j++) {
+        sum += vReal[j];
+      }
+      bands[i] = min(255, (int)(sum / (SAMPLES / 2 / NUM_BANDS)));
+    }
+
+    // Détection de la fréquence fondamentale
+    int maxIndex = 1;
+    for (int i = 2; i < SAMPLES / 2; i++) {
+      if (vReal[i] > vReal[maxIndex]) maxIndex = i;
+    }
+    double fundamentalFreq = (maxIndex * 44100.0) / SAMPLES;
+
+    // Envoi LoRa
+    FFTPacket packet;
+    packet.timestamp = millis();
+    memcpy(packet.bands, bands, NUM_BANDS);
+    packet.fundamentalFreq = (uint16_t)fundamentalFreq;
+    packet.mode = mode;
+
+    LoRa.beginPacket();
+    LoRa.write((uint8_t*)&packet, sizeof(packet));
+    LoRa.endPacket();
+
+    index = 0;
+  }
+}
+
+void setup() {
+  Serial.begin(115200);
+  pinMode(BTN_NEXT, INPUT_PULLUP);
+  pinMode(BTN_PREV, INPUT_PULLUP);
+
+  LoRa.setPins(18, 14, 26);
+  LoRa.begin(868E6);
+
+  a2dp_sink.set_stream_reader(audio_data_callback);
+  a2dp_sink.start("ESP32 Audio");
+}
+
+void loop() {
+  if (digitalRead(BTN_NEXT) == LOW) {
+    mode = (mode + 1) % 4;
+    delay(300);
+  }
+  if (digitalRead(BTN_PREV) == LOW) {
+    mode = (mode == 0) ? 3 : mode - 1;
+    delay(300);
+  }
+}
