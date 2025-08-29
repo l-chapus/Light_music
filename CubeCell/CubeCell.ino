@@ -1,9 +1,9 @@
 #include "LoRaWan_APP.h"
 #include "Arduino.h"
-#include <Adafruit_NeoPixel.h>
+#include "CubeCell_NeoPixel.h"
 
-#define PIN 30
-#define NUM_LEDS 10  // Nombre total de LEDs sur la bande
+#define PIN GPIO2
+#define NUM_LEDS 121  // Nombre total de LEDs sur la bande 121 au total
 
 #define RF_FREQUENCY        433000000 // fréquence 433 MHz
 #define LORA_BANDWIDTH      0         // 0: 125kHz, 1: 250kHz, 2: 500kHz
@@ -18,7 +18,7 @@ static RadioEvents_t RadioEvents;
 
 void OnRxDone(uint8_t *payload, uint16_t size, int16_t rssi, int8_t snr);
 
-Adafruit_NeoPixel strip(NUM_LEDS, PIN, NEO_GRB + NEO_KHZ800);
+CubeCell_NeoPixel strip(NUM_LEDS, PIN, NEO_GRB + NEO_KHZ800);
 
 void setup() {
   Serial.begin(115200);
@@ -43,10 +43,13 @@ void setup() {
 void loop() {
   Radio.IrqProcess();  // gestion des interruptions radio
 
+  for (int i=0; i<NUM_LEDS; i++){
+    Serial.print("Boucle LED");
+    strip.setPixelColor(i, strip.Color(0, 20, 0));
+    strip.show();
+    delay(1000); // Vitesse de l'effet
+  }
 
-  strip.setPixelColor(1, strip.Color(10, 10, 10)); // Dégradé du rouge au vert
-  strip.show();
-  delay(100); // Vitesse de l'effet
 }
 
 void OnRxDone(uint8_t *payload, uint16_t size, int16_t rssi, int8_t snr) {
