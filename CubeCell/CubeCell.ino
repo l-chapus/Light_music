@@ -2,8 +2,8 @@
 #include "Arduino.h"
 #include "CubeCell_NeoPixel.h"
 
-#define PIN GPIO2
-#define NUM_LEDS 121  // Nombre total de LEDs sur la bande 121 au total
+#define PIN GPIO3
+#define NUM_LEDS 120  // Nombre total de LEDs sur la bande 121 au total
 
 #define RF_FREQUENCY        433000000 // fréquence 433 MHz
 #define LORA_BANDWIDTH      0         // 0: 125kHz, 1: 250kHz, 2: 500kHz
@@ -23,6 +23,12 @@ CubeCell_NeoPixel strip(NUM_LEDS, PIN, NEO_GRB + NEO_KHZ800);
 void setup() {
   Serial.begin(115200);
 
+  strip.begin();
+  strip.clear(); 
+  strip.show(); // Initialise toutes les LEDs éteintes
+
+  delay(150);   // stabilisation
+
   RadioEvents.RxDone = OnRxDone;
   Radio.Init(&RadioEvents);
 
@@ -35,20 +41,22 @@ void setup() {
 
   Serial.println("LoRa RX démarré...");
   Radio.Rx(0);  // 0 = réception continue
-
-  strip.begin();
-  strip.show(); // Initialise toutes les LEDs éteintes
 }
 
 void loop() {
   Radio.IrqProcess();  // gestion des interruptions radio
 
-  for (int i=0; i<NUM_LEDS; i++){
-    Serial.print("Boucle LED");
-    strip.setPixelColor(i, strip.Color(0, 20, 0));
+  int colone = 7;
+
+  for (int i = 1; i < NUM_LEDS; i+=8) {
+    strip.setPixelColor(i + colone, strip.Color(50, 0, 0)); // rouge
     strip.show();
-    delay(1000); // Vitesse de l'effet
+    delay(50);
   }
+  delay(1000);
+  strip.clear();
+  strip.show();
+  delay(1000);
 
 }
 
