@@ -20,6 +20,8 @@ void OnRxDone(uint8_t *payload, uint16_t size, int16_t rssi, int8_t snr);
 
 CubeCell_NeoPixel strip(NUM_LEDS, PIN, NEO_GRB + NEO_KHZ800);
 
+uint32_t mode = 0;
+
 void setup() {
   Serial.begin(115200);
 
@@ -45,11 +47,65 @@ void setup() {
 
 void loop() {
   Radio.IrqProcess();  // gestion des interruptions radio
+  
+  switch (mode) {
+    case 1:
+      mode_1();
+      break;
 
-  int colone = 7;
+    default:
+      strip.clear(); 
+      strip.show();
+      break;
+  } 
 
+}
+
+void OnRxDone(uint8_t *payload, uint16_t size, int16_t rssi, int8_t snr) {
+  Serial.print("Message reçu : ");
+  //for (uint16_t i = 0; i < size; i++) {
+  //  Serial.print((uint8_t)payload[i]);
+  //  mode = (uint8_t)payload[i];
+  //}
+  for (int i = 0; i < 4; i++) {
+      int b = (uint8_t)payload[i];
+      if (b == -1) break;
+      ((uint8_t*)&mode)[i] = b;
+    }
+  Serial.println("Compteur reçu : ");
+  Serial.print(mode);
+
+  Serial.println();
+  Serial.printf("RSSI: %d dBm, SNR: %d dB\n", rssi, snr);
+
+  Radio.Rx(0); // relance la réception
+}
+
+void mode_1(){
+  Serial.println("Mode 1 !!");
   for (int i = 1; i < NUM_LEDS; i+=8) {
-    strip.setPixelColor(i + colone, strip.Color(50, 0, 0)); // rouge
+    strip.setPixelColor(i + 0, strip.Color(50, 0, 0)); // rouge
+    strip.show();
+    delay(10);
+    strip.setPixelColor(i + 1, strip.Color(40, 10, 0)); // rouge
+    strip.show();
+    delay(10);
+    strip.setPixelColor(i + 2, strip.Color(30, 20, 0)); // rouge
+    strip.show();
+    delay(10);
+    strip.setPixelColor(i + 3, strip.Color(20, 30, 0)); // rouge
+    strip.show();
+    delay(10);
+    strip.setPixelColor(i + 4, strip.Color(10, 40, 0)); // rouge
+    strip.show();
+    delay(10);
+    strip.setPixelColor(i + 5, strip.Color(0, 50, 0)); // rouge
+    strip.show();
+    delay(10);
+    strip.setPixelColor(i + 6, strip.Color(0, 40, 10)); // rouge
+    strip.show();
+    delay(10);
+    strip.setPixelColor(i + 7, strip.Color(0, 30, 20)); // rouge
     strip.show();
     delay(50);
   }
@@ -57,16 +113,5 @@ void loop() {
   strip.clear();
   strip.show();
   delay(1000);
-
-}
-
-void OnRxDone(uint8_t *payload, uint16_t size, int16_t rssi, int8_t snr) {
-  Serial.print("Message reçu : ");
-  for (uint16_t i = 0; i < size; i++) {
-    Serial.print((char)payload[i]);
-  }
-  Serial.println();
-  Serial.printf("RSSI: %d dBm, SNR: %d dB\n", rssi, snr);
-
-  Radio.Rx(0); // relance la réception
+  
 }

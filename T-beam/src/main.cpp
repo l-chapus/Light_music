@@ -73,6 +73,10 @@ void audio_data_callback(const uint8_t *data, uint32_t len) {
 #define LORA_RST  23
 #define LORA_IRQ  26
 
+#define BUTTON_PIN 38
+volatile uint32_t bouton_compteur = 0;
+bool lastButtonState = HIGH;
+
 void setup() {
   Serial.begin(115200);
 
@@ -94,14 +98,44 @@ void setup() {
   display.clearDisplay();
   display.setTextSize(1);
   display.setTextColor(SSD1306_WHITE);
+
+  pinMode(BUTTON_PIN, INPUT_PULLUP); // GPIO 38 en entrée avec pull-up
+
+  display.clearDisplay();
+  display.setCursor(0, 0);
+  display.print("Compteur bouton: ");
+  display.println(bouton_compteur);
+  display.display();
 }
 
 void loop() {
+  // Gestion du bouton
+  bool buttonState = digitalRead(BUTTON_PIN);
+  if (lastButtonState == HIGH && buttonState == LOW) { // Front descendant
+    bouton_compteur++;
+    Serial.print("Bouton appuyé, compteur = ");
+    Serial.println(bouton_compteur);
+    // Affichage sur OLED
+    display.clearDisplay();
+    display.setCursor(0, 0);
+    display.print("Compteur bouton: ");
+    display.println(bouton_compteur);
+    display.display();
+    delay(200); // Anti-rebond simple
+
+    // Envoi via LoRa : entier au début
+    LoRa.beginPacket();
+    LoRa.write((uint8_t*)&bouton_compteur, sizeof(bouton_compteur)); // Envoie l'entier sur 4 octets
+    LoRa.endPacket();
+    Serial.println("Compteur envoyé via LoRa");
+  }
+  lastButtonState = buttonState;
+
   // test LoRa
-  LoRa.beginPacket();
-  LoRa.print("Hello LoRa!");
-  LoRa.endPacket();
-  Serial.println("Message LoRa envoyé");
-  delay(5000); // Envoie un message toutes les 5 secondes
+  //LoRa.beginPacket();
+  //LoRa.print("Hello LoRa!");
+  //LoRa.endPacket();
+  //Serial.println("Message LoRa envoyé");
+  //delay(5000);
   //delay(50);
 }
