@@ -2,7 +2,7 @@
 #include "Arduino.h"
 #include "CubeCell_NeoPixel.h"
 
-#define PIN GPIO3
+#define PIN GPIO2
 #define NUM_LEDS 120  // Nombre total de LEDs sur la bande 121 au total
 
 #define RF_FREQUENCY        433000000 // fréquence 433 MHz
