@@ -11,7 +11,7 @@
 #define OLED_RESET -1
 #define SCREEN_ADDRESS 0x3C
 
-#define FFT_SIZE 32 // Plus rapide
+#define FFT_SIZE 16 // Plus rapide
 
 Adafruit_SSD1306 display(SCREEN_WIDTH, SCREEN_HEIGHT, &Wire, OLED_RESET);
 BluetoothA2DPSink a2dp_sink; // Instance de BluetoothA2DPSink pour la réception audio
@@ -21,10 +21,22 @@ float vReal[FFT_SIZE];
 float vImag[FFT_SIZE];
 static uint8_t frame = 0;
 
+// Broches LoRa pour TTGO T-Beam v1
+#define LORA_SCK  5
+#define LORA_MISO 19
+#define LORA_MOSI 27
+#define LORA_CS   18
+#define LORA_RST  23
+#define LORA_IRQ  26
+
+#define BUTTON_PIN 38
+volatile uint8_t bouton_compteur = 0;
+bool lastButtonState = HIGH;
+
 void audio_data_callback(const uint8_t *data, uint32_t len) {
 
-  if (++frame % 2 != 0) return; // Affiche 1 fois sur 2
-
+  //if (++frame % 2 != 0) return; // Affiche 1 fois sur 2
+  ++frame;
   int16_t *samples = (int16_t *)data;
   uint32_t sample_count = len / 4; // stéréo 16 bits
 
@@ -47,35 +59,26 @@ void audio_data_callback(const uint8_t *data, uint32_t len) {
 
   // Affichage des valeurs FFT dans la console
   Serial.print("vReal: ");
-  for (uint8_t i = 0; i < FFT_SIZE / 2; i++) {
+  for (uint8_t i = 0; i < FFT_SIZE; i++) {
     Serial.print(vReal[i]);
     Serial.print(" ");
   }
   Serial.println();
-  
-  // Affichage du spectre sur l'OLED
-  display.clearDisplay();
-  for (uint8_t i = 2; i < FFT_SIZE / 2; i++) { // On ignore les basses fréquences (DC)
-    int barHeight = map((int)vReal[i], 0, 2000, 0, SCREEN_HEIGHT);
-    int x = map(i, 2, FFT_SIZE / 2 - 1, 0, SCREEN_WIDTH - 1);
-    display.drawLine(x, SCREEN_HEIGHT, x, SCREEN_HEIGHT - barHeight, SSD1306_WHITE);
-  }
-  display.display();
 
   Serial.println("-------------------");
+
+  // ENVOI LoRa : compteur (mode) + vReal[]
+  uint16_t val =0;
+  LoRa.beginPacket();
+  LoRa.write((uint8_t*)&bouton_compteur, sizeof(bouton_compteur)); // 1 octet
+
+  for (uint8_t i = 0; i < FFT_SIZE; i++) {
+    val = (uint16_t)vReal[i]; // conversion simple
+    LoRa.write((uint8_t*)&val, sizeof(val)); // 1 octet par valeur
+  }
+  LoRa.endPacket();
+  Serial.println("Compteur + vReal envoyés via LoRa");
 }
-
-// Broches LoRa pour TTGO T-Beam v1/v2
-#define LORA_SCK  5
-#define LORA_MISO 19
-#define LORA_MOSI 27
-#define LORA_CS   18
-#define LORA_RST  23
-#define LORA_IRQ  26
-
-#define BUTTON_PIN 38
-volatile uint32_t bouton_compteur = 0;
-bool lastButtonState = HIGH;
 
 void setup() {
   Serial.begin(115200);
@@ -94,6 +97,8 @@ void setup() {
 
   a2dp_sink.start("T-BEAM audio");
   a2dp_sink.set_stream_reader(audio_data_callback);
+
+  Serial.println("Bluetooth prêt !");
 
   display.clearDisplay();
   display.setTextSize(1);
@@ -130,12 +135,4 @@ void loop() {
     Serial.println("Compteur envoyé via LoRa");
   }
   lastButtonState = buttonState;
-
-  // test LoRa
-  //LoRa.beginPacket();
-  //LoRa.print("Hello LoRa!");
-  //LoRa.endPacket();
-  //Serial.println("Message LoRa envoyé");
-  //delay(5000);
-  //delay(50);
 }

@@ -20,7 +20,17 @@ void OnRxDone(uint8_t *payload, uint16_t size, int16_t rssi, int8_t snr);
 
 CubeCell_NeoPixel strip(NUM_LEDS, PIN, NEO_GRB + NEO_KHZ800);
 
-uint32_t mode = 0;
+uint8_t mode = 0; 
+int offset = 0;
+int tab_spiral[120] = {0, 0, 0, 0, 0, 0, 5, 10, 25, 0, 0, 0, 0, 0, 0, 5, 10, 25, 0, 0, 0, 0, 0, 0, 5, 10, 25, 0, 0, 0, 0, 0, 0, 5, 10, 25, 0, 0, 0, 0, 0, 0, 5, 10, 25, 0, 0, 0, 0, 0, 0, 5, 10, 25, 0, 0, 0, 0, 0, 0, 5, 10, 25, 0, 0, 0, 0, 0, 0, 5, 10, 25, 0, 0, 0, 0, 0, 0, 5, 10, 25, 0, 0, 0, 0, 0, 0, 5, 10, 25, 0, 0, 0, 0, 0, 0, 5, 10, 25, 0, 0, 0, 0, 0, 0, 5, 10, 25, 0, 0, 0, 0, 0, 0, 5, 10, 25, 0, 0, 0};
+int tab_spiral_temp[120];
+int spiral_offset = 0;  // décalage du motif
+
+// Définition du motif lumineux
+const int motif[] = {25, 10, 5, 0, 0, 0, 0, 0, 0};  
+const int motif_size = sizeof(motif) / sizeof(motif[0]);
+
+const uint16_t FFT_SIZE = 32;
 
 void setup() {
   Serial.begin(115200);
@@ -49,8 +59,40 @@ void loop() {
   Radio.IrqProcess();  // gestion des interruptions radio
   
   switch (mode) {
+    case 0:
+      break;
     case 1:
       mode_1();
+      break;
+    case 2:
+      mode_couleur_static(25,0,0);
+      break;
+    case 3:
+      mode_couleur_static(25,25,0);
+      break;
+    case 4:
+      mode_couleur_static(0,25,0);
+      break;
+    case 5:
+      mode_couleur_static(0,25,25);
+      break;
+    case 6:
+      mode_couleur_static(0,0,25);
+      break;
+    case 7:
+      mode_couleur_static(25,0,25);
+      break;
+    case 8:
+      animation_spiral();
+      break;
+    case 9:
+      animation_scintillement();
+      break;
+    case 10:
+      animation_arc_en_ciel();
+      break;
+    case 11:
+      animation_equalizer();
       break;
 
     default:
@@ -61,28 +103,152 @@ void loop() {
 
 }
 
+void affichage_musique(uint16_t amplitude[FFT_SIZE / 2]) {
+  strip.clear();
+
+  // On découpe le bandeau en (FFT_SIZE/2) segments
+  // Exemple : 120 LEDs / (FFT_SIZE/2) = nombre de LEDs par bande
+  int leds_per_band = NUM_LEDS / (FFT_SIZE / 2);
+
+  for (int band = 0; band < FFT_SIZE / 2; band++) {
+    // Récupère l’amplitude et la mappe sur une intensité 0..255
+    int level = map(amplitude[band], 0, 2000, 0, leds_per_band);
+    if (level > leds_per_band) level = leds_per_band;
+
+    // Choix d’une couleur en fonction de la bande (dégradé spectral)
+    uint32_t color = strip.Color(
+      (band * 5) % 155,          // rouge varie
+      (255 - (band * 8)) % 155,  // vert varie
+      (band * 15) % 155          // bleu varie
+    );
+
+    // Allume les LEDs correspondant au niveau de cette bande
+    int start = band * leds_per_band;
+    for (int i = 0; i < level; i++) {
+      int led_index = start + i;
+      if (led_index < NUM_LEDS) {
+        strip.setPixelColor(led_index, color);
+      }
+    }
+  }
+
+  strip.show();
+}
+
 void OnRxDone(uint8_t *payload, uint16_t size, int16_t rssi, int8_t snr) {
   Serial.print("Message reçu : ");
-  //for (uint16_t i = 0; i < size; i++) {
-  //  Serial.print((uint8_t)payload[i]);
-  //  mode = (uint8_t)payload[i];
-  //}
-  for (int i = 0; i < 4; i++) {
-      int b = (uint8_t)payload[i];
-      if (b == -1) break;
-      ((uint8_t*)&mode)[i] = b;
-    }
-  Serial.println("Compteur reçu : ");
-  Serial.print(mode);
+ 
+  memcpy(&mode, payload, sizeof(mode));
 
+  uint8_t frame_rx;
+  //memcpy(&frame_rx, payload + 1, sizeof(frame_rx));
+
+  uint16_t vReal_rx[FFT_SIZE / 2];
+
+  // Vérif si assez de données pour la FFT
+  uint16_t expected_size = 2 + (FFT_SIZE / 2) * sizeof(uint16_t);
+  if (size < expected_size) {
+    Serial.println("⚠ Paquet tronqué, données FFT incomplètes !");
+  } else {
+    memcpy(vReal_rx, payload + 2, (FFT_SIZE / 2) * sizeof(uint16_t));
+  }
+
+  // --- Affichage ---
+  Serial.print("Compteur/mode : ");
+  Serial.println(mode);
+  Serial.print("Frame : ");
+  Serial.println(frame_rx);
+
+  Serial.print("FFT (partielle) : ");
+  for (uint8_t i = 0; i < FFT_SIZE / 2; i++) {
+    Serial.print(vReal_rx[i], 1); // 1 décimale
+    Serial.print(" ");
+  }
   Serial.println();
-  Serial.printf("RSSI: %d dBm, SNR: %d dB\n", rssi, snr);
+  //Serial.printf("RSSI: %d dBm, SNR: %d dB\n", rssi, snr);
+  Serial.println("-------------------");
 
-  Radio.Rx(0); // relance la réception
+  affichage_musique(vReal_rx);
+}
+
+void animation_equalizer() {
+  for (int i = 0; i < NUM_LEDS; i++) {
+    // Trouve la position de cette LED dans le motif
+    int index = (i + spiral_offset) % motif_size;
+    int val = motif[index];
+
+    strip.setPixelColor(i, val, 0, 0);
+  }
+
+  strip.show();
+
+  // Décalage à chaque frame
+  spiral_offset = (spiral_offset + 1) % motif_size;
+
+  delay(40);
+}
+
+void animation_arc_en_ciel() {
+  static int offset = 0;
+  for (int i = 0; i < NUM_LEDS; i++) {
+    int pixelHue = (i * 65536L / NUM_LEDS + offset) & 0xFFFF;
+    strip.setPixelColor(i, strip.gamma32(strip.ColorHSV(pixelHue)));
+  }
+  strip.show();
+  offset += 256;  // vitesse de défilement
+  delay(20);
+}
+
+void animation_scintillement() {
+  for(int i=0; i<NUM_LEDS; i++){
+    if(random(0,10)<2) strip.setPixelColor(i, 30, 0 ,90);
+    else strip.setPixelColor(i,0,0,0);
+  }
+  strip.show();
+  delay(100);
+}
+
+void animation_spiral(){
+  int k=0;
+  for (int i = 1; i < NUM_LEDS; i++) {
+    k = i-1;
+    strip.setPixelColor(i, strip.Color(tab_spiral[k], 0, 0)); 
+    
+    if (k<119){
+      tab_spiral_temp[k+1] = tab_spiral[k];
+    }
+  }
+  
+  if (offset == 0){
+    tab_spiral_temp[0] = 25;
+  }
+  else if (offset == 1){
+    tab_spiral_temp[0] = 10;
+  }
+  else if (offset == 2){
+    tab_spiral_temp[0] = 5;
+  }
+  else {
+    tab_spiral_temp[0] = 0;
+  }
+  offset = (offset + 1)%9;
+
+  for (int i = 0; i < NUM_LEDS; i++) {
+    tab_spiral[i] = tab_spiral_temp[i];
+  }
+  strip.show();
+  delay(40);
+}
+
+void mode_couleur_static(int r, int g, int b){ // Affichage d'une couleur static
+  for (int i = 1; i < NUM_LEDS; i++) {
+    strip.setPixelColor(i, strip.Color(r, g, b)); 
+    strip.show();
+    delay(5);
+  }
 }
 
 void mode_1(){
-  Serial.println("Mode 1 !!");
   for (int i = 1; i < NUM_LEDS; i+=8) {
     strip.setPixelColor(i + 0, strip.Color(50, 0, 0)); // rouge
     strip.show();
@@ -113,5 +279,4 @@ void mode_1(){
   strip.clear();
   strip.show();
   delay(1000);
-  
 }
