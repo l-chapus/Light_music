@@ -11,7 +11,7 @@
 #define OLED_RESET -1
 #define SCREEN_ADDRESS 0x3C
 
-#define FFT_SIZE 16 // Plus rapide
+#define FFT_SIZE 128 
 
 Adafruit_SSD1306 display(SCREEN_WIDTH, SCREEN_HEIGHT, &Wire, OLED_RESET);
 BluetoothA2DPSink a2dp_sink; // Instance de BluetoothA2DPSink pour la réception audio
@@ -32,11 +32,10 @@ static uint8_t frame = 0;
 #define BUTTON_PIN 38
 volatile uint8_t bouton_compteur = 0;
 bool lastButtonState = HIGH;
+volatile bool fft_ready = false;
+#define AMP_MAX 44000 // Amplitude max attendue pour la normalisation FFT
 
 void audio_data_callback(const uint8_t *data, uint32_t len) {
-
-  //if (++frame % 2 != 0) return; // Affiche 1 fois sur 2
-  ++frame;
   int16_t *samples = (int16_t *)data;
   uint32_t sample_count = len / 4; // stéréo 16 bits
 
@@ -51,39 +50,22 @@ void audio_data_callback(const uint8_t *data, uint32_t len) {
     }
   }
   
-  Serial.println("Frame: " + String(frame));
-
   FFT.windowing(vReal, FFT_SIZE, FFT_WIN_TYP_HAMMING, FFT_FORWARD);
   FFT.compute(vReal, vImag, FFT_SIZE, FFT_FORWARD);
   FFT.complexToMagnitude(vReal, vImag, FFT_SIZE);
 
-  // Affichage des valeurs FFT dans la console
-  Serial.print("vReal: ");
-  for (uint8_t i = 0; i < FFT_SIZE; i++) {
-    Serial.print(vReal[i]);
-    Serial.print(" ");
-  }
-  Serial.println();
-
-  Serial.println("-------------------");
-
-  // ENVOI LoRa : compteur (mode) + vReal[]
-  uint16_t val =0;
-  LoRa.beginPacket();
-  LoRa.write((uint8_t*)&bouton_compteur, sizeof(bouton_compteur)); // 1 octet
-
-  for (uint8_t i = 0; i < FFT_SIZE; i++) {
-    val = (uint16_t)vReal[i]; // conversion simple
-    LoRa.write((uint8_t*)&val, sizeof(val)); // 1 octet par valeur
-  }
-  LoRa.endPacket();
-  Serial.println("Compteur + vReal envoyés via LoRa");
+  fft_ready = true;
 }
 
 void setup() {
   Serial.begin(115200);
 
   LoRa.setPins(LORA_CS, LORA_RST, LORA_IRQ); // Important !
+
+  //LoRa.setSpreadingFactor(7);    // Valeur minimale (7 = plus rapide, 12 = plus lent)
+  //LoRa.setSignalBandwidth(250E3); // 250 kHz = plus rapide, 125 kHz = défaut
+  //LoRa.setCodingRate4(5);        // 4/5 = plus rapide, 4/8 = plus lent
+
   if (!LoRa.begin(433E6)) {
     Serial.println("Erreur init LoRa !");
     while (1);
@@ -114,6 +96,8 @@ void setup() {
 }
 
 void loop() {
+  static unsigned long last_fft_send = 0;
+
   // Gestion du bouton
   bool buttonState = digitalRead(BUTTON_PIN);
   if (lastButtonState == HIGH && buttonState == LOW) { // Front descendant
@@ -135,4 +119,30 @@ void loop() {
     Serial.println("Compteur envoyé via LoRa");
   }
   lastButtonState = buttonState;
+
+  // Envoi FFT si prêt et 100 ms écoulées
+  if (fft_ready && (millis() - last_fft_send >= 50)) {
+    fft_ready = false;
+    //Serial.println("last_fft_send est de : " + String(millis() - last_fft_send));
+    last_fft_send = millis();
+  
+    // ENVOI LoRa : compteur (mode) + vReal[]
+    uint8_t val = 0;
+    float val_f = 0;
+    LoRa.beginPacket();
+    LoRa.write((uint8_t*)&bouton_compteur, sizeof(bouton_compteur)); // 1 octet
+
+    for (uint8_t i = 0; i < FFT_SIZE / 8; i++) {
+      val_f = vReal[i];
+      if (val_f < 0) val_f = 0; // Juste au cas où
+      if (val_f > AMP_MAX) val_f = AMP_MAX; // amplitude max attendue
+      val = (uint8_t)(val_f * 255.0 / AMP_MAX); // Normalisation sur 8 bits
+      LoRa.write((uint8_t*)&val, sizeof(val)); // 1 octet par valeur
+      Serial.print(vReal[i]); Serial.print(" ");
+      Serial.print(val); Serial.print(" ");
+    }
+    Serial.println("----------------");
+
+    LoRa.endPacket();
+  }
 }

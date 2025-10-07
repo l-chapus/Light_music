@@ -30,7 +30,7 @@ int spiral_offset = 0;  // décalage du motif
 const int motif[] = {25, 10, 5, 0, 0, 0, 0, 0, 0};  
 const int motif_size = sizeof(motif) / sizeof(motif[0]);
 
-const uint16_t FFT_SIZE = 32;
+const uint16_t FFT_SIZE = 16;
 
 void setup() {
   Serial.begin(115200);
@@ -103,16 +103,16 @@ void loop() {
 
 }
 
-void affichage_musique(uint16_t amplitude[FFT_SIZE / 2]) {
+void affichage_musique(uint8_t amplitude[FFT_SIZE]) {
   strip.clear();
 
-  // On découpe le bandeau en (FFT_SIZE/2) segments
-  // Exemple : 120 LEDs / (FFT_SIZE/2) = nombre de LEDs par bande
-  int leds_per_band = NUM_LEDS / (FFT_SIZE / 2);
+  // On découpe le bandeau en (FFT_SIZE) segments
+  // Exemple : 120 LEDs / (FFT_SIZE) = nombre de LEDs par bande
+  int leds_per_band = NUM_LEDS / (FFT_SIZE);
 
-  for (int band = 0; band < FFT_SIZE / 2; band++) {
+  for (int band = 0; band < FFT_SIZE; band++) {
     // Récupère l’amplitude et la mappe sur une intensité 0..255
-    int level = map(amplitude[band], 0, 2000, 0, leds_per_band);
+    int level = amplitude[band];
     if (level > leds_per_band) level = leds_per_band;
 
     // Choix d’une couleur en fonction de la bande (dégradé spectral)
@@ -140,27 +140,22 @@ void OnRxDone(uint8_t *payload, uint16_t size, int16_t rssi, int8_t snr) {
  
   memcpy(&mode, payload, sizeof(mode));
 
-  uint8_t frame_rx;
-  //memcpy(&frame_rx, payload + 1, sizeof(frame_rx));
-
-  uint16_t vReal_rx[FFT_SIZE / 2];
+  uint8_t vReal_rx[FFT_SIZE];
 
   // Vérif si assez de données pour la FFT
-  uint16_t expected_size = 2 + (FFT_SIZE / 2) * sizeof(uint16_t);
+  uint16_t expected_size = 1 + (FFT_SIZE) * sizeof(uint8_t);
   if (size < expected_size) {
     Serial.println("⚠ Paquet tronqué, données FFT incomplètes !");
   } else {
-    memcpy(vReal_rx, payload + 2, (FFT_SIZE / 2) * sizeof(uint16_t));
+    memcpy(vReal_rx, payload + 1, (FFT_SIZE) * sizeof(uint8_t));
   }
 
   // --- Affichage ---
   Serial.print("Compteur/mode : ");
   Serial.println(mode);
-  Serial.print("Frame : ");
-  Serial.println(frame_rx);
 
   Serial.print("FFT (partielle) : ");
-  for (uint8_t i = 0; i < FFT_SIZE / 2; i++) {
+  for (uint8_t i = 0; i < FFT_SIZE; i++) {
     Serial.print(vReal_rx[i], 1); // 1 décimale
     Serial.print(" ");
   }
@@ -250,28 +245,28 @@ void mode_couleur_static(int r, int g, int b){ // Affichage d'une couleur static
 
 void mode_1(){
   for (int i = 1; i < NUM_LEDS; i+=8) {
-    strip.setPixelColor(i + 0, strip.Color(50, 0, 0)); // rouge
+    strip.setPixelColor(i + 0, strip.Color(50, 0, 0)); 
     strip.show();
     delay(10);
-    strip.setPixelColor(i + 1, strip.Color(40, 10, 0)); // rouge
+    strip.setPixelColor(i + 1, strip.Color(40, 10, 0)); 
     strip.show();
     delay(10);
-    strip.setPixelColor(i + 2, strip.Color(30, 20, 0)); // rouge
+    strip.setPixelColor(i + 2, strip.Color(30, 20, 0)); 
     strip.show();
     delay(10);
-    strip.setPixelColor(i + 3, strip.Color(20, 30, 0)); // rouge
+    strip.setPixelColor(i + 3, strip.Color(20, 30, 0));
     strip.show();
     delay(10);
-    strip.setPixelColor(i + 4, strip.Color(10, 40, 0)); // rouge
+    strip.setPixelColor(i + 4, strip.Color(10, 40, 0)); 
     strip.show();
     delay(10);
-    strip.setPixelColor(i + 5, strip.Color(0, 50, 0)); // rouge
+    strip.setPixelColor(i + 5, strip.Color(0, 50, 0)); 
     strip.show();
     delay(10);
-    strip.setPixelColor(i + 6, strip.Color(0, 40, 10)); // rouge
+    strip.setPixelColor(i + 6, strip.Color(0, 40, 10));
     strip.show();
     delay(10);
-    strip.setPixelColor(i + 7, strip.Color(0, 30, 20)); // rouge
+    strip.setPixelColor(i + 7, strip.Color(0, 30, 20)); 
     strip.show();
     delay(50);
   }
