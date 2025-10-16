@@ -58,6 +58,15 @@ void setup() {
 void loop() {
   Radio.IrqProcess();  // gestion des interruptions radio
   
+  // TEMP
+  float voltage = getBatteryVoltage();
+  Serial.printf("Tension batterie : %.2f V\n", voltage);
+  //Serial.print(voltage);
+ 
+  //Serial.println("--------------");
+  delay(5000);
+  // END TEMP
+
   switch (mode) {
     case 0:
       break;

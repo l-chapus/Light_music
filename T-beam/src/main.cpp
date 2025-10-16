@@ -11,7 +11,7 @@
 #define OLED_RESET -1
 #define SCREEN_ADDRESS 0x3C
 
-#define FFT_SIZE 128 
+#define FFT_SIZE 512 
 
 Adafruit_SSD1306 display(SCREEN_WIDTH, SCREEN_HEIGHT, &Wire, OLED_RESET);
 BluetoothA2DPSink a2dp_sink; // Instance de BluetoothA2DPSink pour la réception audio
@@ -121,9 +121,9 @@ void loop() {
   lastButtonState = buttonState;
 
   // Envoi FFT si prêt et 100 ms écoulées
-  if (fft_ready && (millis() - last_fft_send >= 50)) {
+  if (fft_ready && (millis() - last_fft_send >= 10)) {
     fft_ready = false;
-    //Serial.println("last_fft_send est de : " + String(millis() - last_fft_send));
+    Serial.println("last_fft_send est de : " + String(millis() - last_fft_send));
     last_fft_send = millis();
   
     // ENVOI LoRa : compteur (mode) + vReal[]
@@ -132,14 +132,12 @@ void loop() {
     LoRa.beginPacket();
     LoRa.write((uint8_t*)&bouton_compteur, sizeof(bouton_compteur)); // 1 octet
 
-    for (uint8_t i = 0; i < FFT_SIZE / 8; i++) {
+    for (uint8_t i = 0; i < 16; i++) {
       val_f = vReal[i];
       if (val_f < 0) val_f = 0; // Juste au cas où
       if (val_f > AMP_MAX) val_f = AMP_MAX; // amplitude max attendue
       val = (uint8_t)(val_f * 255.0 / AMP_MAX); // Normalisation sur 8 bits
       LoRa.write((uint8_t*)&val, sizeof(val)); // 1 octet par valeur
-      Serial.print(vReal[i]); Serial.print(" ");
-      Serial.print(val); Serial.print(" ");
     }
     Serial.println("----------------");
 
