@@ -2,7 +2,7 @@
 #include "Arduino.h"
 #include "CubeCell_NeoPixel.h"
 
-#define PIN GPIO2
+#define PIN_LEDS GPIO2
 #define NUM_LEDS 120  // Nombre total de LEDs sur la bande 121 au total
 
 #define RF_FREQUENCY        433000000 // fréquence 433 MHz
@@ -14,11 +14,19 @@
 #define LORA_FIX_LENGTH_PAYLOAD_ON false
 #define LORA_IQ_INVERSION_ON false
 
+#define PIN_BOUTON GPIO4
+#define PIN_EN GPIO5
+
+bool etatSortie = false;       // mémorise l'état actuel
+bool dernierEtatBouton = HIGH; // HIGH = relâché (pull-up activé)
+unsigned long dernierDebounce = 0;
+const unsigned long debounceDelay = 50; // anti-rebond en millisecondes
+
 static RadioEvents_t RadioEvents;
 
 void OnRxDone(uint8_t *payload, uint16_t size, int16_t rssi, int8_t snr);
 
-CubeCell_NeoPixel strip(NUM_LEDS, PIN, NEO_GRB + NEO_KHZ800);
+CubeCell_NeoPixel strip(NUM_LEDS, PIN_LEDS, NEO_GRB + NEO_KHZ800);
 
 uint8_t mode = 0; 
 int offset = 0;
@@ -53,18 +61,41 @@ void setup() {
 
   Serial.println("LoRa RX démarré...");
   Radio.Rx(0);  // 0 = réception continue
+
+  pinMode(PIN_BOUTON, INPUT_PULLUP);
+  pinMode(PIN_EN, OUTPUT); 
 }
 
 void loop() {
   Radio.IrqProcess();  // gestion des interruptions radio
-  
+
+  int etat = digitalRead(PIN_BOUTON);
+  // si l'état a changé, on démarre la temporisation d'anti-rebond
+  if (etat != dernierEtatBouton) {
+    dernierDebounce = millis();
+  }
+
+  // si le nouvel état est stable depuis assez longtemps
+  if ((millis() - dernierDebounce) > debounceDelay) {
+    if (etat == LOW && dernierEtatBouton == HIGH) {
+      // bouton pressé (transition HIGH → LOW)
+      etatSortie = !etatSortie;  // on inverse la sortie
+      digitalWrite(PIN_EN, etatSortie);
+      Serial.print("Sortie GPIO5 = ");
+      Serial.println(etatSortie ? "HIGH" : "LOW");
+    }
+  }
+
+  // mise à jour pour la prochaine boucle
+  dernierEtatBouton = etat;
+
   // TEMP
-  float voltage = getBatteryVoltage();
-  Serial.printf("Tension batterie : %.2f V\n", voltage);
+  //float voltage = getBatteryVoltage();
+  //Serial.printf("Tension batterie : %.2f V\n", voltage);
   //Serial.print(voltage);
- 
+  
   //Serial.println("--------------");
-  delay(5000);
+  //delay(5000);
   // END TEMP
 
   switch (mode) {
