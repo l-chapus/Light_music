@@ -19,8 +19,6 @@
 
 bool etatSortie = false;       // mémorise l'état actuel
 bool dernierEtatBouton = HIGH; // HIGH = relâché (pull-up activé)
-unsigned long dernierDebounce = 0;
-const unsigned long debounceDelay = 50; // anti-rebond en millisecondes
 
 static RadioEvents_t RadioEvents;
 
@@ -70,21 +68,15 @@ void loop() {
   Radio.IrqProcess();  // gestion des interruptions radio
 
   int etat = digitalRead(PIN_BOUTON);
+  
   // si l'état a changé, on démarre la temporisation d'anti-rebond
-  if (etat != dernierEtatBouton) {
-    dernierDebounce = millis();
+  if (etat == LOW && dernierEtatBouton == HIGH) {
+    etatSortie = !etatSortie;  // on inverse la sortie
+    digitalWrite(PIN_EN, etatSortie);
+    Serial.print("Sortie GPIO5 = ");
+    Serial.println(etatSortie ? "HIGH" : "LOW");
   }
 
-  // si le nouvel état est stable depuis assez longtemps
-  if ((millis() - dernierDebounce) > debounceDelay) {
-    if (etat == LOW && dernierEtatBouton == HIGH) {
-      // bouton pressé (transition HIGH → LOW)
-      etatSortie = !etatSortie;  // on inverse la sortie
-      digitalWrite(PIN_EN, etatSortie);
-      Serial.print("Sortie GPIO5 = ");
-      Serial.println(etatSortie ? "HIGH" : "LOW");
-    }
-  }
 
   // mise à jour pour la prochaine boucle
   dernierEtatBouton = etat;
