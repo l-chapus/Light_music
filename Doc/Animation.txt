@@ -1,0 +1,2 @@
+Idées : 
+Balayage en x, y et en diagonale

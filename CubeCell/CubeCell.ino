@@ -1,44 +1,53 @@
 #include "LoRaWan_APP.h"
 #include "Arduino.h"
 #include "CubeCell_NeoPixel.h"
-
-#define PIN_LEDS GPIO2
-#define NUM_LEDS 120  // Nombre total de LEDs sur la bande 121 au total
-
-#define RF_FREQUENCY        433000000 // fréquence 433 MHz
-#define LORA_BANDWIDTH      0         // 0: 125kHz, 1: 250kHz, 2: 500kHz
-#define LORA_SPREADING_FACTOR 7       // SF7..SF12
-#define LORA_CODINGRATE     1         // 1=4/5, 2=4/6, 3=4/7, 4=4/8
-#define LORA_PREAMBLE_LENGTH 8        // préambule
-#define LORA_SYMBOL_TIMEOUT 0
-#define LORA_FIX_LENGTH_PAYLOAD_ON false
-#define LORA_IQ_INVERSION_ON false
-
-#define PIN_BOUTON GPIO4
-#define PIN_EN GPIO5
+#include "config.h"
 
 bool etatSortie = false;       // mémorise l'état actuel
-bool dernierEtatBouton = HIGH; // HIGH = relâché (pull-up activé)
+volatile bool changementEtat = false; // flag utilisé entre ISR et loop
+unsigned long int tempsAppui = 0;
 
-static RadioEvents_t RadioEvents;
+static RadioEvents_t RadioEvents; // Pour la réception LoRa
 
 void OnRxDone(uint8_t *payload, uint16_t size, int16_t rssi, int8_t snr);
 
 CubeCell_NeoPixel strip(NUM_LEDS, PIN_LEDS, NEO_GRB + NEO_KHZ800);
 
-uint8_t mode = 0; 
-int offset = 0;
-int tab_spiral[120] = {0, 0, 0, 0, 0, 0, 5, 10, 25, 0, 0, 0, 0, 0, 0, 5, 10, 25, 0, 0, 0, 0, 0, 0, 5, 10, 25, 0, 0, 0, 0, 0, 0, 5, 10, 25, 0, 0, 0, 0, 0, 0, 5, 10, 25, 0, 0, 0, 0, 0, 0, 5, 10, 25, 0, 0, 0, 0, 0, 0, 5, 10, 25, 0, 0, 0, 0, 0, 0, 5, 10, 25, 0, 0, 0, 0, 0, 0, 5, 10, 25, 0, 0, 0, 0, 0, 0, 5, 10, 25, 0, 0, 0, 0, 0, 0, 5, 10, 25, 0, 0, 0, 0, 0, 0, 5, 10, 25, 0, 0, 0, 0, 0, 0, 5, 10, 25, 0, 0, 0};
-int tab_spiral_temp[120];
-int spiral_offset = 0;  // décalage du motif
+uint8_t mode = 0;
 
-// Définition du motif lumineux
-const int motif[] = {25, 10, 5, 0, 0, 0, 0, 0, 0};  
-const int motif_size = sizeof(motif) / sizeof(motif[0]);
+// === Fonction appelée lors de l’interruption ===
+void boutonInterrupt() {
+  if (digitalRead(PIN_BOUTON) == LOW) {
+    tempsAppui = millis();                // Sauvegarde le temps où le bouton a été appuyé
+  }
+  else {
+    if (millis() - tempsAppui > TEMPO_SLEEP){
+      etatSortie = !etatSortie;
+      if (!etatSortie) animationStop();
+      digitalWrite(PIN_EN, etatSortie); // allume le bandeau LED
+      if (etatSortie) animationStart();
+      mode = 0;
 
-const uint16_t FFT_SIZE = 16;
+      if (DEBUG_BOUTON) Serial.println("ON/OFF");
+    }
+    else if (etatSortie == true){
+      mode++;                           // Incrémente le mode
+      if (DEBUG_BOUTON) Serial.printf("Mode : %d \n", mode);
+    }
+  }
+}
 
 void setup() {
+  pinMode(PIN_BOUTON, INPUT_PULLUP); // Bouton
+  pinMode(PIN_EN, OUTPUT);           // Enable du convertisseur 5V
+
+  attachInterrupt(digitalPinToInterrupt(PIN_BOUTON), boutonInterrupt, CHANGE);
+
+  if (DEBUG_ANIMATION) {
+    digitalWrite(PIN_EN, true); // allume le bandeau LED
+    etatSortie = true;
+  }
+  
   Serial.begin(115200);
 
   strip.begin();
@@ -59,27 +68,16 @@ void setup() {
 
   Serial.println("LoRa RX démarré...");
   Radio.Rx(0);  // 0 = réception continue
-
-  pinMode(PIN_BOUTON, INPUT_PULLUP);
-  pinMode(PIN_EN, OUTPUT); 
 }
 
-void loop() {
+void setPixelColor(uint8_t x, uint8_t y, uint8_t R, uint8_t G, uint8_t B) {
+  if (x > 10 || x < 0 || y > 10 || y < 0) return; // si on est en dehors du tableau
+  strip.setPixelColor(correspondance_led[y][x], R, G, B);
+  //if (DEBUG_ANIMATION) Serial.printf("Coordonnée demandée x : %d , y : %d et numéro de la LED : %d \n",x ,y ,correspondance_led[y][x]);
+}
+
+void loop() { 
   Radio.IrqProcess();  // gestion des interruptions radio
-
-  int etat = digitalRead(PIN_BOUTON);
-  
-  // si l'état a changé, on démarre la temporisation d'anti-rebond
-  if (etat == LOW && dernierEtatBouton == HIGH) {
-    etatSortie = !etatSortie;  // on inverse la sortie
-    digitalWrite(PIN_EN, etatSortie);
-    Serial.print("Sortie GPIO5 = ");
-    Serial.println(etatSortie ? "HIGH" : "LOW");
-  }
-
-
-  // mise à jour pour la prochaine boucle
-  dernierEtatBouton = etat;
 
   // TEMP
   //float voltage = getBatteryVoltage();
@@ -91,13 +89,14 @@ void loop() {
   // END TEMP
 
   switch (mode) {
-    case 0:
+    case 0: 
+      animation_wave(); 
       break;
-    case 1:
-      mode_1();
+    case 1: 
+      animation_matrix(); 
       break;
     case 2:
-      mode_couleur_static(25,0,0);
+      mode_couleur_static(0,0,25); 
       break;
     case 3:
       mode_couleur_static(25,25,0);
@@ -109,22 +108,7 @@ void loop() {
       mode_couleur_static(0,25,25);
       break;
     case 6:
-      mode_couleur_static(0,0,25);
-      break;
-    case 7:
-      mode_couleur_static(25,0,25);
-      break;
-    case 8:
-      animation_spiral();
-      break;
-    case 9:
       animation_scintillement();
-      break;
-    case 10:
-      animation_arc_en_ciel();
-      break;
-    case 11:
-      animation_equalizer();
       break;
 
     default:
@@ -192,42 +176,65 @@ void OnRxDone(uint8_t *payload, uint16_t size, int16_t rssi, int8_t snr) {
     Serial.print(" ");
   }
   Serial.println();
-  //Serial.printf("RSSI: %d dBm, SNR: %d dB\n", rssi, snr);
+  Serial.printf("RSSI: %d dBm, SNR: %d dB\n", rssi, snr);
   Serial.println("-------------------");
 
   affichage_musique(vReal_rx);
 }
 
-void animation_equalizer() {
-  for (int i = 0; i < NUM_LEDS; i++) {
-    // Trouve la position de cette LED dans le motif
-    int index = (i + spiral_offset) % motif_size;
-    int val = motif[index];
+void animation_wave() {
+  static uint8_t frame = 0;
+  const int cx = WIDTH / 2;
+  const int cy = HEIGHT / 2;
 
-    strip.setPixelColor(i, val, 0, 0);
+  strip.clear();
+  for (uint8_t y = 0; y < HEIGHT; y++) {
+    for (uint8_t x = 0; x < WIDTH; x++) {
+      float dx = x - cx;
+      float dy = y - cy;
+      float dist = sqrt(dx * dx + dy * dy);
+      if (abs(dist - frame / 2.0) < 0.8) {
+        uint8_t c = 255 - (dist * 30);
+        setPixelColor(x, y, c, c / 2, 0);
+      }
+    }
   }
 
   strip.show();
-
-  // Décalage à chaque frame
-  spiral_offset = (spiral_offset + 1) % motif_size;
-
-  delay(40);
+  frame = (frame + 1) % (HEIGHT * 3);
+  delay(50);
 }
 
-void animation_arc_en_ciel() {
-  static int offset = 0;
-  for (int i = 0; i < NUM_LEDS; i++) {
-    int pixelHue = (i * 65536L / NUM_LEDS + offset) & 0xFFFF;
-    strip.setPixelColor(i, strip.gamma32(strip.ColorHSV(pixelHue)));
+void animation_matrix() {
+  static int drops[10] = {0};
+
+  // Fait descendre chaque colonne
+  for (int x = 0; x < 10; x++) {
+    drops[x]++;
+    if (drops[x] >= 10 || random(0, 100) < 5)
+      drops[x] = 0;
   }
+
+  // Efface tout
+  strip.clear();
+
+  // Affiche les gouttes vertes
+  for (int x = 0; x < 10; x++) {
+    int y = drops[x];
+    if (y >= 0 && y < 10)
+      setPixelColor(x, y, 0, 255, 0);     // tête brillante
+    if (y - 1 >= 0)
+      setPixelColor(x, y - 1, 0, 100, 0); // traînée moyenne
+    if (y - 2 >= 0)
+      setPixelColor(x, y - 2, 0, 40, 0);  // traînée faible
+  }
+
   strip.show();
-  offset += 256;  // vitesse de défilement
-  delay(20);
+  delay(100);
 }
 
 void animation_scintillement() {
-  for(int i=0; i<NUM_LEDS; i++){
+  for(int i=1; i<NUM_LEDS; i++){
     if(random(0,10)<2) strip.setPixelColor(i, 30, 0 ,90);
     else strip.setPixelColor(i,0,0,0);
   }
@@ -235,75 +242,37 @@ void animation_scintillement() {
   delay(100);
 }
 
-void animation_spiral(){
-  int k=0;
-  for (int i = 1; i < NUM_LEDS; i++) {
-    k = i-1;
-    strip.setPixelColor(i, strip.Color(tab_spiral[k], 0, 0)); 
-    
-    if (k<119){
-      tab_spiral_temp[k+1] = tab_spiral[k];
+void mode_couleur_static(int r, int g, int b){ // Affichage d'une couleur static
+  for (int x = 0; x < 10; x++) {
+    for (int y = 0; y < 10; y++) {
+      setPixelColor(x, y, r, g, b); 
     }
   }
-  
-  if (offset == 0){
-    tab_spiral_temp[0] = 25;
-  }
-  else if (offset == 1){
-    tab_spiral_temp[0] = 10;
-  }
-  else if (offset == 2){
-    tab_spiral_temp[0] = 5;
-  }
-  else {
-    tab_spiral_temp[0] = 0;
-  }
-  offset = (offset + 1)%9;
-
-  for (int i = 0; i < NUM_LEDS; i++) {
-    tab_spiral[i] = tab_spiral_temp[i];
-  }
   strip.show();
-  delay(40);
 }
 
-void mode_couleur_static(int r, int g, int b){ // Affichage d'une couleur static
-  for (int i = 1; i < NUM_LEDS; i++) {
-    strip.setPixelColor(i, strip.Color(r, g, b)); 
-    strip.show();
-    delay(5);
-  }
+void animationStart() {
+  mode = 2;
+  delay(100);
+  mode_couleur_static(0,0,10);
+  delay(300);
+  mode_couleur_static(0,0,20);
+  delay(300);
+  mode_couleur_static(0,0,80);
+  delay(300);
+  strip.clear(); 
+  strip.show();
 }
 
-void mode_1(){
-  for (int i = 1; i < NUM_LEDS; i+=8) {
-    strip.setPixelColor(i + 0, strip.Color(50, 0, 0)); 
-    strip.show();
-    delay(10);
-    strip.setPixelColor(i + 1, strip.Color(40, 10, 0)); 
-    strip.show();
-    delay(10);
-    strip.setPixelColor(i + 2, strip.Color(30, 20, 0)); 
-    strip.show();
-    delay(10);
-    strip.setPixelColor(i + 3, strip.Color(20, 30, 0));
-    strip.show();
-    delay(10);
-    strip.setPixelColor(i + 4, strip.Color(10, 40, 0)); 
-    strip.show();
-    delay(10);
-    strip.setPixelColor(i + 5, strip.Color(0, 50, 0)); 
-    strip.show();
-    delay(10);
-    strip.setPixelColor(i + 6, strip.Color(0, 40, 10));
-    strip.show();
-    delay(10);
-    strip.setPixelColor(i + 7, strip.Color(0, 30, 20)); 
-    strip.show();
-    delay(50);
-  }
-  delay(1000);
-  strip.clear();
+void animationStop() {
+  mode = 2;
+  delay(100);
+  mode_couleur_static(10,0,0);
+  delay(300);
+  mode_couleur_static(20,0,0);
+  delay(300);
+  mode_couleur_static(50,0,0);
+  delay(300);
+  strip.clear(); 
   strip.show();
-  delay(1000);
 }
