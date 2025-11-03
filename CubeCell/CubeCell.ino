@@ -4,12 +4,13 @@
 #include "config.h"
 
 bool etatSortie = false;       // mémorise l'état actuel
-volatile bool changementEtat = false; // flag utilisé entre ISR et loop
 unsigned long int tempsAppui = 0;
 
 static RadioEvents_t RadioEvents; // Pour la réception LoRa
 
 void OnRxDone(uint8_t *payload, uint16_t size, int16_t rssi, int8_t snr);
+uint8_t dataLora[FFT_SIZE];   // tableau des données reçu en LoRa
+bool dataReady = false;
 
 CubeCell_NeoPixel strip(NUM_LEDS, PIN_LEDS, NEO_GRB + NEO_KHZ800);
 
@@ -71,7 +72,10 @@ void setup() {
 }
 
 void setPixelColor(uint8_t x, uint8_t y, uint8_t R, uint8_t G, uint8_t B) {
-  if (x > 10 || x < 0 || y > 10 || y < 0) return; // si on est en dehors du tableau
+  if (x > 10 || x < 0 || y > 10 || y < 0) {// si on est en dehors du tableau
+    Serial.println("ERREUR 2 : Coordonnées en dehors du tableau !"); 
+    return;
+  }
   strip.setPixelColor(correspondance_led[y][x], R, G, B);
   //if (DEBUG_ANIMATION) Serial.printf("Coordonnée demandée x : %d , y : %d et numéro de la LED : %d \n",x ,y ,correspondance_led[y][x]);
 }
@@ -89,26 +93,38 @@ void loop() {
   // END TEMP
 
   switch (mode) {
-    case 0: 
-      animation_wave(); 
+    case 0: // utilisation en DEBUG uniquement
+      ligne_couleur_static(9, 250, 0, 0);
       break;
-    case 1: 
-      animation_matrix(); 
+    case 1:   // mode pour l'affichage de la musique
+      colone_couleur_static(8, 0,150, 0);
       break;
     case 2:
-      mode_couleur_static(0,0,25); 
+      animation_matrix(); 
       break;
     case 3:
-      mode_couleur_static(25,25,0);
+      animation_wave();
       break;
     case 4:
-      mode_couleur_static(0,25,0);
+      couleur_static(0,25,0);
       break;
     case 5:
-      mode_couleur_static(0,25,25);
+      couleur_static(0,25,25);
       break;
     case 6:
       animation_scintillement();
+      break;
+    case 248:
+      colone_couleur_static(dataLora[0], dataLora[1], dataLora[2], dataLora[3]);   // colone static avec une couleur
+      dataReady = false;
+      break;
+    case 249:
+      ligne_couleur_static(dataLora[0], dataLora[1], dataLora[2], dataLora[3]);   // ligne static avec une couleur
+      dataReady = false;
+      break;
+    case 250:
+      couleur_static(dataLora[0], dataLora[1], dataLora[2]);                      // uni avec une couleur static
+      dataReady = false;
       break;
 
     default:
@@ -152,34 +168,79 @@ void affichage_musique(uint8_t amplitude[FFT_SIZE]) {
 }
 
 void OnRxDone(uint8_t *payload, uint16_t size, int16_t rssi, int8_t snr) {
-  Serial.print("Message reçu : ");
- 
-  memcpy(&mode, payload, sizeof(mode));
+  memcpy(&mode, payload, sizeof(mode)); // Lecture du mode d'affichage
 
-  uint8_t vReal_rx[FFT_SIZE];
-
-  // Vérif si assez de données pour la FFT
-  uint16_t expected_size = 1 + (FFT_SIZE) * sizeof(uint8_t);
-  if (size < expected_size) {
-    Serial.println("⚠ Paquet tronqué, données FFT incomplètes !");
-  } else {
-    memcpy(vReal_rx, payload + 1, (FFT_SIZE) * sizeof(uint8_t));
+  if (mode == 1){
+    // Vérif si assez de données pour la FFT
+    uint16_t expected_size = 1 + (FFT_SIZE) * sizeof(uint8_t);
+    if (size < expected_size) {
+      Serial.println("ERREUR 1 : Paquet tronqué, données FFT incomplètes !");
+    } else {
+      memcpy(dataLora, payload + 1, (FFT_SIZE) * sizeof(uint8_t));
+    }
+    affichage_musique(dataLora);
+    dataReady = true;
   }
 
-  // --- Affichage ---
-  Serial.print("Compteur/mode : ");
-  Serial.println(mode);
-
-  Serial.print("FFT (partielle) : ");
-  for (uint8_t i = 0; i < FFT_SIZE; i++) {
-    Serial.print(vReal_rx[i], 1); // 1 décimale
-    Serial.print(" ");
+  if (mode == 249 || mode == 248){ // extraction de 4 variables
+    uint16_t expected_size = 4 * sizeof(uint8_t);
+    if (size < expected_size) {
+      Serial.println("ERREUR 249 : Paquet tronqué, données incomplètes !");
+    } else {
+      memcpy(dataLora, payload + 1, 4 * sizeof(uint8_t));
+      dataReady = true;
+    }
   }
-  Serial.println();
-  Serial.printf("RSSI: %d dBm, SNR: %d dB\n", rssi, snr);
-  Serial.println("-------------------");
+  if (mode == 250){ // extraction de 3 variables
+    uint16_t expected_size = 3 * sizeof(uint8_t);
+    if (size < expected_size) {
+      Serial.println("ERREUR 250 : Paquet tronqué, données incomplètes ! ");
+    } else {
+      memcpy(dataLora, payload + 1, 3 * sizeof(uint8_t));
+      dataReady = true;
+    }
+  }
+   
+  // --- Affichage DEBUG ---
+  if (DEBUG_RECEPTION) {
+    Serial.print("Message reçu : ");
+    Serial.print("Compteur/mode : ");
+    Serial.println(mode);
+  
+    Serial.print("FFT (partielle) : ");
+    for (uint8_t i = 0; i < FFT_SIZE; i++) {
+      Serial.print(dataLora[i], 1); // 1 décimale
+      Serial.print(" ");
+    }
+    Serial.println();
+    Serial.printf("RSSI: %d dBm, SNR: %d dB\n", rssi, snr);
+    Serial.println("-------------------");
+  }
+  
+}
 
-  affichage_musique(vReal_rx);
+void couleur_static(int r, int g, int b){ // Affichage d'une couleur static
+  for (int x = 0; x < WIDTH; x++) {
+    for (int y = 0; y < HEIGHT; y++) {
+      setPixelColor(x, y, r, g, b); 
+    }
+  }
+  strip.show();
+}
+
+void ligne_couleur_static(int numLigne, int r, int g, int b){ // Affichage d'une ligne avec une couleur static
+  for (int x = 0; x < WIDTH; x++) {
+    setPixelColor(x, numLigne, r, g, b); 
+  }
+  delay(15);
+  strip.show();
+}
+void colone_couleur_static(int numcolone, int r, int g, int b){ // Affichage d'une colone avec une couleur static
+  for (int y = 0; y < HEIGHT; y++) {
+    setPixelColor(numcolone, y, r, g, b); 
+  }
+  delay(15);
+  strip.show();
 }
 
 void animation_wave() {
@@ -242,23 +303,14 @@ void animation_scintillement() {
   delay(100);
 }
 
-void mode_couleur_static(int r, int g, int b){ // Affichage d'une couleur static
-  for (int x = 0; x < 10; x++) {
-    for (int y = 0; y < 10; y++) {
-      setPixelColor(x, y, r, g, b); 
-    }
-  }
-  strip.show();
-}
-
 void animationStart() {
   mode = 2;
   delay(100);
-  mode_couleur_static(0,0,10);
+  couleur_static(0,0,10);
   delay(300);
-  mode_couleur_static(0,0,20);
+  couleur_static(0,0,20);
   delay(300);
-  mode_couleur_static(0,0,80);
+  couleur_static(0,0,80);
   delay(300);
   strip.clear(); 
   strip.show();
@@ -267,11 +319,11 @@ void animationStart() {
 void animationStop() {
   mode = 2;
   delay(100);
-  mode_couleur_static(10,0,0);
+  couleur_static(10,0,0);
   delay(300);
-  mode_couleur_static(20,0,0);
+  couleur_static(20,0,0);
   delay(300);
-  mode_couleur_static(50,0,0);
+  couleur_static(50,0,0);
   delay(300);
   strip.clear(); 
   strip.show();

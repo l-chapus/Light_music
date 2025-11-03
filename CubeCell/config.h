@@ -2,8 +2,9 @@
 #define CONFIG_H
 
 // --- DEBUG---
-#define DEBUG_BOUTON true
+#define DEBUG_BOUTON false
 #define DEBUG_ANIMATION true
+#define DEBUG_RECEPTION false
 
 // --- Pin pour la bande LED ---
 #define PIN_LEDS GPIO2
