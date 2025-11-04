@@ -2,9 +2,11 @@
 #include "Arduino.h"
 #include "CubeCell_NeoPixel.h"
 #include "config.h"
+#include "EEPROM.h"
 
 bool etatSortie = false;       // mémorise l'état actuel
 unsigned long int tempsAppui = 0;
+uint8_t deviceID = 0;        // variable de ton identifiant
 
 static RadioEvents_t RadioEvents; // Pour la réception LoRa
 
@@ -15,28 +17,7 @@ bool dataReady = false;
 CubeCell_NeoPixel strip(NUM_LEDS, PIN_LEDS, NEO_GRB + NEO_KHZ800);
 
 uint8_t mode = 0;
-
-// === Fonction appelée lors de l’interruption ===
-void boutonInterrupt() {
-  if (digitalRead(PIN_BOUTON) == LOW) {
-    tempsAppui = millis();                // Sauvegarde le temps où le bouton a été appuyé
-  }
-  else {
-    if (millis() - tempsAppui > TEMPO_SLEEP){
-      etatSortie = !etatSortie;
-      if (!etatSortie) animationStop();
-      digitalWrite(PIN_EN, etatSortie); // allume le bandeau LED
-      if (etatSortie) animationStart();
-      mode = 0;
-
-      if (DEBUG_BOUTON) Serial.println("ON/OFF");
-    }
-    else if (etatSortie == true){
-      mode++;                           // Incrémente le mode
-      if (DEBUG_BOUTON) Serial.printf("Mode : %d \n", mode);
-    }
-  }
-}
+bool animationContinue = false;
 
 void setup() {
   pinMode(PIN_BOUTON, INPUT_PULLUP); // Bouton
@@ -69,6 +50,12 @@ void setup() {
 
   Serial.println("LoRa RX démarré...");
   Radio.Rx(0);  // 0 = réception continue
+
+  EEPROM.begin(EEPROM_SIZE); // initialise la mémoire Flash
+  // Lecture de l'ID en mémoire
+  deviceID = EEPROM.read(EEPROM_ADDR_ID);
+  Serial.print("ID actuel lu depuis la Flash : ");
+  Serial.println(deviceID);
 }
 
 void setPixelColor(uint8_t x, uint8_t y, uint8_t R, uint8_t G, uint8_t B) {
@@ -78,6 +65,113 @@ void setPixelColor(uint8_t x, uint8_t y, uint8_t R, uint8_t G, uint8_t B) {
   }
   strip.setPixelColor(correspondance_led[y][x], R, G, B);
   //if (DEBUG_ANIMATION) Serial.printf("Coordonnée demandée x : %d , y : %d et numéro de la LED : %d \n",x ,y ,correspondance_led[y][x]);
+}
+uint32_t getPixelColor(uint8_t x, uint8_t y) {
+  return strip.getPixelColor(correspondance_led[y][x]);
+}
+
+void changementMode(){
+  switch (mode) {
+    case 0: // utilisation en DEBUG uniquement
+      
+      break;
+    case 1:   // mode pour l'affichage de la musique
+      defilement(2, 0, 155, 20, 50, 2);
+      animationContinue = true;
+      break;
+    case 2:
+      defilement(3, 50, 5, 20, 250, 1);
+      animationContinue = true;
+      break;
+    case 3:
+      animation_wave();
+      animationContinue = true;
+      break;
+    case 4:
+      couleur_static(0,25,0);
+      animationContinue = false;
+      break;
+    case 5:
+      animation_matrix(); 
+      animationContinue = true;
+      break;
+    case 6:
+      animation_scintillement();
+      animationContinue = true;
+      break;
+    case 147:
+      if (dataReady){
+        defilement(dataLora[0], dataLora[1], dataLora[2], dataLora[3], dataLora[4], dataLora[5]);   // colone static avec une couleur
+        dataReady = false;
+        animationContinue = true;
+      }
+      break;
+    case 148:
+      if (dataReady){
+        colone_couleur_static(dataLora[0], dataLora[1], dataLora[2], dataLora[3]);   // colone static avec une couleur
+        dataReady = false;
+        animationContinue = false;
+      }
+      break;
+    case 149:
+      if (dataReady){
+        ligne_couleur_static(dataLora[0], dataLora[1], dataLora[2], dataLora[3]);   // ligne static avec une couleur
+        dataReady = false;
+        animationContinue = false;
+      }
+      break;
+    case 150:
+      if (dataReady){
+        couleur_static(dataLora[0], dataLora[1], dataLora[2]);                      // uni avec une couleur static
+        dataReady = false;
+        animationContinue = false;
+      }
+      break;
+    case 151:
+      if (dataReady){
+        strip.clear(); 
+        strip.show();
+        dataReady = false;
+      }
+      break;
+    case 200:
+      if (dataReady){
+        if (deviceID != dataLora[0]){
+          EEPROM.write(EEPROM_ADDR_ID, dataLora[0]);
+          EEPROM.commit(); // obligatoire pour valider l’écriture
+        }
+        dataReady = false;
+      }
+      break;
+
+    default:
+      strip.clear(); 
+      strip.show();
+      break;
+  } 
+}
+
+// === Fonction appelée lors de l’interruption ===
+void boutonInterrupt() {
+  if (digitalRead(PIN_BOUTON) == LOW) {
+    tempsAppui = millis();                // Sauvegarde le temps où le bouton a été appuyé
+  }
+  else {
+    if (millis() - tempsAppui > TEMPO_SLEEP){
+      etatSortie = !etatSortie;
+      if (!etatSortie) animationStop();
+      digitalWrite(PIN_EN, etatSortie); // allume le bandeau LED
+      if (etatSortie) animationStart();
+      mode = 0;
+
+      if (DEBUG_BOUTON) Serial.println("ON/OFF");
+    }
+    else if (etatSortie == true){
+      mode++;                           // Incrémente le mode
+      if (DEBUG_BOUTON) Serial.printf("Mode : %d \n", mode);
+    }
+  }
+  changementMode();
 }
 
 void loop() { 
@@ -92,46 +186,9 @@ void loop() {
   //delay(5000);
   // END TEMP
 
-  switch (mode) {
-    case 0: // utilisation en DEBUG uniquement
-      ligne_couleur_static(9, 250, 0, 0);
-      break;
-    case 1:   // mode pour l'affichage de la musique
-      colone_couleur_static(8, 0,150, 0);
-      break;
-    case 2:
-      animation_matrix(); 
-      break;
-    case 3:
-      animation_wave();
-      break;
-    case 4:
-      couleur_static(0,25,0);
-      break;
-    case 5:
-      couleur_static(0,25,25);
-      break;
-    case 6:
-      animation_scintillement();
-      break;
-    case 248:
-      colone_couleur_static(dataLora[0], dataLora[1], dataLora[2], dataLora[3]);   // colone static avec une couleur
-      dataReady = false;
-      break;
-    case 249:
-      ligne_couleur_static(dataLora[0], dataLora[1], dataLora[2], dataLora[3]);   // ligne static avec une couleur
-      dataReady = false;
-      break;
-    case 250:
-      couleur_static(dataLora[0], dataLora[1], dataLora[2]);                      // uni avec une couleur static
-      dataReady = false;
-      break;
-
-    default:
-      strip.clear(); 
-      strip.show();
-      break;
-  } 
+  if (animationContinue){
+    changementMode();
+  }
 
 }
 
@@ -168,38 +225,57 @@ void affichage_musique(uint8_t amplitude[FFT_SIZE]) {
 }
 
 void OnRxDone(uint8_t *payload, uint16_t size, int16_t rssi, int8_t snr) {
-  memcpy(&mode, payload, sizeof(mode)); // Lecture du mode d'affichage
+  uint8_t IdRecu = 0;
+  
+  memcpy(&IdRecu, payload, sizeof(IdRecu)); // Lecture de l'ID
+  if (IdRecu != deviceID) return;           // si on ne vise pas ce composant
+
+  memcpy(&mode, payload + 1, sizeof(mode)); // Lecture du mode d'affichage
 
   if (mode == 1){
     // Vérif si assez de données pour la FFT
-    uint16_t expected_size = 1 + (FFT_SIZE) * sizeof(uint8_t);
+    uint16_t expected_size = 2 + (FFT_SIZE) * sizeof(uint8_t);
     if (size < expected_size) {
       Serial.println("ERREUR 1 : Paquet tronqué, données FFT incomplètes !");
     } else {
-      memcpy(dataLora, payload + 1, (FFT_SIZE) * sizeof(uint8_t));
+      memcpy(dataLora, payload + 2, (FFT_SIZE) * sizeof(uint8_t));
     }
     affichage_musique(dataLora);
     dataReady = true;
   }
 
-  if (mode == 249 || mode == 248){ // extraction de 4 variables
-    uint16_t expected_size = 4 * sizeof(uint8_t);
+  if (mode == 151){ // extraction de 0 variable
+    dataReady = true;
+  }
+  if (mode == 200){ // extraction de 1 variable
+    uint16_t expected_size = 1 * sizeof(uint8_t);
     if (size < expected_size) {
-      Serial.println("ERREUR 249 : Paquet tronqué, données incomplètes !");
+      Serial.println("ERREUR 250 : Paquet tronqué, données incomplètes ! ");
     } else {
-      memcpy(dataLora, payload + 1, 4 * sizeof(uint8_t));
+      memcpy(dataLora, payload + 2, 1 * sizeof(uint8_t));
       dataReady = true;
     }
   }
-  if (mode == 250){ // extraction de 3 variables
+  if (mode == 150){ // extraction de 3 variables
     uint16_t expected_size = 3 * sizeof(uint8_t);
     if (size < expected_size) {
       Serial.println("ERREUR 250 : Paquet tronqué, données incomplètes ! ");
     } else {
-      memcpy(dataLora, payload + 1, 3 * sizeof(uint8_t));
+      memcpy(dataLora, payload + 2, 3 * sizeof(uint8_t));
       dataReady = true;
     }
   }
+  if (mode == 149 || mode == 148){ // extraction de 4 variables
+    uint16_t expected_size = 4 * sizeof(uint8_t);
+    if (size < expected_size) {
+      Serial.println("ERREUR 249 : Paquet tronqué, données incomplètes !");
+    } else {
+      memcpy(dataLora, payload + 2, 4 * sizeof(uint8_t));
+      dataReady = true;
+    }
+  }
+  
+  
    
   // --- Affichage DEBUG ---
   if (DEBUG_RECEPTION) {
@@ -216,7 +292,7 @@ void OnRxDone(uint8_t *payload, uint16_t size, int16_t rssi, int8_t snr) {
     Serial.printf("RSSI: %d dBm, SNR: %d dB\n", rssi, snr);
     Serial.println("-------------------");
   }
-  
+  changementMode();
 }
 
 void couleur_static(int r, int g, int b){ // Affichage d'une couleur static
@@ -227,7 +303,6 @@ void couleur_static(int r, int g, int b){ // Affichage d'une couleur static
   }
   strip.show();
 }
-
 void ligne_couleur_static(int numLigne, int r, int g, int b){ // Affichage d'une ligne avec une couleur static
   for (int x = 0; x < WIDTH; x++) {
     setPixelColor(x, numLigne, r, g, b); 
@@ -242,6 +317,66 @@ void colone_couleur_static(int numcolone, int r, int g, int b){ // Affichage d'u
   delay(15);
   strip.show();
 }
+void defilement(uint8_t sens, int vitesse, uint8_t R, uint8_t G, uint8_t B, uint8_t trainee) {
+  static uint8_t frame = 0;  // position actuelle du défilement
+
+  // ---  Atténue la couleur existante pour créer la traînée ---
+  for (uint8_t y = 0; y < 10; y++) {
+    for (uint8_t x = 0; x < 10; x++) {
+      // On récupère la couleur actuelle
+      uint32_t color = getPixelColor(x, y);
+      uint8_t r = (color >> 16) & 0xFF;
+      uint8_t g = (color >> 8) & 0xFF;
+      uint8_t b = color & 0xFF;
+
+      // On réduit la luminosité selon le coefficient de traînée
+      r = r * trainee/10;
+      g = g * trainee/10;
+      b = b * trainee/10;
+
+      setPixelColor(x, y, r, g, b);
+    }
+  }
+
+  // --- Allume la ligne/colonne active ---
+  switch (sens) {
+    case 0: { // Droite
+      uint8_t x_actif = frame % 10;
+      colone_couleur_static(x_actif, R, G, B);
+      break;
+    }
+
+    case 1: { // Gauche
+      uint8_t x_actif = (9 - (frame % 10));
+      colone_couleur_static(x_actif, R, G, B);
+      break;
+    }
+
+    case 2: { // Bas
+      uint8_t y_actif = frame % 10;
+      ligne_couleur_static(y_actif, R, G, B);
+      break;
+    }
+
+    case 3: { // Haut
+      uint8_t y_actif = (9 - (frame % 10));
+      ligne_couleur_static(y_actif, R, G, B);
+      break;
+    }
+
+    default:
+      Serial.println("ERREUR 4 : Sens de défilement invalide !");
+      return;
+  }
+
+  // --- Mise à jour de l'affichage ---
+  strip.show();
+
+  // --- Frame suivante ---
+  frame = (frame + 1) % 10;
+  delay(vitesse);
+}
+
 
 void animation_wave() {
   static uint8_t frame = 0;

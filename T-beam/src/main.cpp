@@ -95,6 +95,34 @@ void setup() {
   display.display();
 }
 
+void fonction_test() {
+  // Fonction vide pour test
+  bouton_compteur = 200; // Valeur de test
+  uint8_t ID = 1;
+  uint8_t R = 10;
+  uint8_t G = 10;
+  uint8_t B = 150;
+  uint8_t ligne = 1;
+  LoRa.beginPacket();
+  LoRa.write((uint8_t*)&ID, sizeof(bouton_compteur)); // Envoie l'entier sur 2 octets
+  LoRa.write((uint8_t*)&bouton_compteur, sizeof(bouton_compteur)); // Envoie l'entier sur 2 octets
+  LoRa.write((uint8_t*)&ligne, sizeof(bouton_compteur)); // Envoie l'entier sur 2 octets
+  LoRa.endPacket();
+
+  delay(2000);
+
+  bouton_compteur = 148; // Valeur de test
+
+  LoRa.beginPacket();
+  LoRa.write((uint8_t*)&ID, sizeof(bouton_compteur)); // Envoie l'entier sur 2 octets
+  LoRa.write((uint8_t*)&bouton_compteur, sizeof(bouton_compteur)); // Envoie l'entier sur 2 octets
+  LoRa.write((uint8_t*)&ligne, sizeof(uint8_t)); // Envoie l'entier sur 2 octets
+  LoRa.write((uint8_t*)&R, sizeof(uint8_t)); // Envoie l'entier sur 2 octets
+  LoRa.write((uint8_t*)&G, sizeof(uint8_t)); // Envoie l'entier sur 2 octets
+  LoRa.write((uint8_t*)&B, sizeof(uint8_t)); // Envoie l'entier sur 2 octets
+  LoRa.endPacket();
+}
+
 void loop() {
   static unsigned long last_fft_send = 0;
 
@@ -112,10 +140,12 @@ void loop() {
     display.display();
     delay(200); // Anti-rebond simple
 
+    fonction_test(); // Test d'envoi
+
     // Envoi via LoRa : entier au début
-    LoRa.beginPacket();
-    LoRa.write((uint8_t*)&bouton_compteur, sizeof(bouton_compteur)); // Envoie l'entier sur 4 octets
-    LoRa.endPacket();
+    //LoRa.beginPacket();
+    //LoRa.write((uint8_t*)&bouton_compteur, sizeof(bouton_compteur)); // Envoie l'entier sur 2 octets
+    //LoRa.endPacket();
     Serial.println("Compteur envoyé via LoRa");
   }
   lastButtonState = buttonState;
@@ -129,7 +159,9 @@ void loop() {
     // ENVOI LoRa : compteur (mode) + vReal[]
     uint8_t val = 0;
     float val_f = 0;
+    uint8_t ID = 1;
     LoRa.beginPacket();
+    LoRa.write((uint8_t*)&ID, sizeof(bouton_compteur)); // Envoie l'entier sur 2 octets
     LoRa.write((uint8_t*)&bouton_compteur, sizeof(bouton_compteur)); // 1 octet
 
     for (uint8_t i = 0; i < 16; i++) {
@@ -144,3 +176,4 @@ void loop() {
     LoRa.endPacket();
   }
 }
+

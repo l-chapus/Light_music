@@ -42,4 +42,8 @@ const uint8_t correspondance_led[10][10] = {
   {91, 90, 71, 70, 51, 50, 31, 30, 11, 10},
 };
 
+// --- Sauvegarde de l'id dans l'EEPROM ---
+#define EEPROM_SIZE 64       // taille réservée dans la Flash
+#define EEPROM_ADDR_ID 0     // adresse de stockage de ton ID
+
 #endif
