@@ -76,16 +76,16 @@ void changementMode(){
       
       break;
     case 1:   // mode pour l'affichage de la musique
-      defilement(2, 0, 155, 20, 50, 2);
+      animation_vague(1, 20, 200, 10, 50);
       animationContinue = true;
       break;
     case 2:
-      defilement(3, 50, 5, 20, 250, 1);
+      animation_vague(0, 10, 0, 50, 250);
       animationContinue = true;
       break;
     case 3:
-      animation_wave();
-      animationContinue = true;
+      //animation_vague();
+      //animationContinue = true;
       break;
     case 4:
       couleur_static(0,25,0);
@@ -99,11 +99,30 @@ void changementMode(){
       animation_scintillement();
       animationContinue = true;
       break;
-    case 147:
+    
+    case 96:
+      animation_vague(dataLora[0], dataLora[1], dataLora[2], dataLora[3], dataLora[4]);   // colone static avec une couleur
+      animationContinue = true;
+      break;
+    case 97:
+      defilement(dataLora[0], dataLora[1], dataLora[2], dataLora[3], dataLora[4], dataLora[5]);   // défilement avec une couleur
+      animationContinue = true;
+      break;
+    
+    case 146:
       if (dataReady){
-        defilement(dataLora[0], dataLora[1], dataLora[2], dataLora[3], dataLora[4], dataLora[5]);   // colone static avec une couleur
+        animation_vague(dataLora[0], dataLora[1], dataLora[2], dataLora[3], dataLora[4]);   // colone static avec une couleur
         dataReady = false;
         animationContinue = true;
+        mode = 96;        // Passe en mode continue
+      }
+      break;
+    case 147:
+      if (dataReady){
+        defilement(dataLora[0], dataLora[1], dataLora[2], dataLora[3], dataLora[4], dataLora[5]);   // défilement avec une couleur
+        dataReady = false;
+        animationContinue = true;
+        mode = 97;      // Passe en mode continue
       }
       break;
     case 148:
@@ -159,24 +178,40 @@ void boutonInterrupt() {
   else {
     if (millis() - tempsAppui > TEMPO_SLEEP){
       etatSortie = !etatSortie;
-      if (!etatSortie) animationStop();
-      digitalWrite(PIN_EN, etatSortie); // allume le bandeau LED
-      if (etatSortie) animationStart();
+      if (!etatSortie) {
+        animationStop();
+        delay(30);
+        Radio.Sleep();    // Stop la réception LoRa
+      }
+      digitalWrite(PIN_EN, etatSortie); // allume ou éteint le bandeau LED
+      if (etatSortie) {
+        animationStart();
+        delay(30);
+        // Redémarre la réception LoRa
+        Radio.Init(&RadioEvents);
+        Radio.SetChannel(RF_FREQUENCY);
+        Radio.SetRxConfig(MODEM_LORA, LORA_BANDWIDTH, LORA_SPREADING_FACTOR,
+                          LORA_CODINGRATE, 0, LORA_PREAMBLE_LENGTH,
+                          LORA_SYMBOL_TIMEOUT, LORA_FIX_LENGTH_PAYLOAD_ON,
+                          0, true, 0, 0, LORA_IQ_INVERSION_ON, true);
+        Radio.Rx(0);  // 0 = réception continue
+        delay(100);
+      }
       mode = 0;
 
       if (DEBUG_BOUTON) Serial.println("ON/OFF");
     }
     else if (etatSortie == true){
       mode++;                           // Incrémente le mode
+      changementMode();
       if (DEBUG_BOUTON) Serial.printf("Mode : %d \n", mode);
     }
+    strip.clear();
+    strip.show();
   }
-  changementMode();
 }
 
 void loop() { 
-  Radio.IrqProcess();  // gestion des interruptions radio
-
   // TEMP
   //float voltage = getBatteryVoltage();
   //Serial.printf("Tension batterie : %.2f V\n", voltage);
@@ -185,9 +220,16 @@ void loop() {
   //Serial.println("--------------");
   //delay(5000);
   // END TEMP
+  if (!etatSortie) {
+    lowPowerHandler();    // met en veille profond la carte = 0.24 mA
+    
+  }
 
-  if (animationContinue){
-    changementMode();
+  else {
+    Radio.IrqProcess();  // gestion des interruptions radio
+    if (animationContinue){
+      changementMode();
+    }
   }
 
 }
@@ -259,7 +301,7 @@ void OnRxDone(uint8_t *payload, uint16_t size, int16_t rssi, int8_t snr) {
   if (mode == 150){ // extraction de 3 variables
     uint16_t expected_size = 3 * sizeof(uint8_t);
     if (size < expected_size) {
-      Serial.println("ERREUR 250 : Paquet tronqué, données incomplètes ! ");
+      Serial.println("ERREUR 249 : Paquet tronqué, données incomplètes ! ");
     } else {
       memcpy(dataLora, payload + 2, 3 * sizeof(uint8_t));
       dataReady = true;
@@ -268,13 +310,30 @@ void OnRxDone(uint8_t *payload, uint16_t size, int16_t rssi, int8_t snr) {
   if (mode == 149 || mode == 148){ // extraction de 4 variables
     uint16_t expected_size = 4 * sizeof(uint8_t);
     if (size < expected_size) {
-      Serial.println("ERREUR 249 : Paquet tronqué, données incomplètes !");
+      Serial.println("ERREUR 248 : Paquet tronqué, données incomplètes !");
     } else {
       memcpy(dataLora, payload + 2, 4 * sizeof(uint8_t));
       dataReady = true;
     }
   }
-  
+  if (mode == 146){ // extraction de 5 variables
+    uint16_t expected_size = 5 * sizeof(uint8_t);
+    if (size < expected_size) {
+      Serial.println("ERREUR 247 : Paquet tronqué, données incomplètes !");
+    } else {
+      memcpy(dataLora, payload + 2, 5 * sizeof(uint8_t));
+      dataReady = true;
+    }
+  }
+  if (mode == 147){ // extraction de 6 variables
+    uint16_t expected_size = 6 * sizeof(uint8_t);
+    if (size < expected_size) {
+      Serial.println("ERREUR 246 : Paquet tronqué, données incomplètes !");
+    } else {
+      memcpy(dataLora, payload + 2, 6 * sizeof(uint8_t));
+      dataReady = true;
+    }
+  }
   
    
   // --- Affichage DEBUG ---
@@ -295,6 +354,16 @@ void OnRxDone(uint8_t *payload, uint16_t size, int16_t rssi, int8_t snr) {
   changementMode();
 }
 
+void animationStart() {
+  for (int k=0; k<25; ++k){
+    animation_vague(0, 20, 0, 120, 250);
+  }
+}
+void animationStop() {
+  for (int k=0; k<25; ++k){
+    animation_vague(1, 20, 200, 20, 20);
+  }
+}
 void couleur_static(int r, int g, int b){ // Affichage d'une couleur static
   for (int x = 0; x < WIDTH; x++) {
     for (int y = 0; y < HEIGHT; y++) {
@@ -376,12 +445,11 @@ void defilement(uint8_t sens, int vitesse, uint8_t R, uint8_t G, uint8_t B, uint
   frame = (frame + 1) % 10;
   delay(vitesse);
 }
-
-
-void animation_wave() {
-  static uint8_t frame = 0;
+void animation_vague(uint8_t sens, int vitesse, uint8_t R, uint8_t G, uint8_t B) {
+  static int frame = 5;
   const int cx = WIDTH / 2;
   const int cy = HEIGHT / 2;
+  const int maxFrame = HEIGHT * 3; // amplitude max de l’onde
 
   strip.clear();
   for (uint8_t y = 0; y < HEIGHT; y++) {
@@ -390,16 +458,27 @@ void animation_wave() {
       float dy = y - cy;
       float dist = sqrt(dx * dx + dy * dy);
       if (abs(dist - frame / 2.0) < 0.8) {
-        uint8_t c = 255 - (dist * 30);
-        setPixelColor(x, y, c, c / 2, 0);
+        uint8_t cR = max(0, R - (dist * 30));
+        uint8_t cG = max(0, G - (dist * 30));
+        uint8_t cB = max(0, B - (dist * 30));
+        setPixelColor(x, y, cR, cG, cB);
       }
     }
   }
 
   strip.show();
-  frame = (frame + 1) % (HEIGHT * 3);
-  delay(50);
+  // Gestion du sens de propagation
+  if (sens == 0) { 
+    frame++;  // vers l’extérieur
+    if (frame >= maxFrame) frame = 0;
+  } 
+  else {    
+    frame--;  // vers le centre
+    if (frame <= 0) frame = maxFrame;
+  }
+  delay(vitesse);
 }
+
 
 void animation_matrix() {
   static int drops[10] = {0};
@@ -436,30 +515,4 @@ void animation_scintillement() {
   }
   strip.show();
   delay(100);
-}
-
-void animationStart() {
-  mode = 2;
-  delay(100);
-  couleur_static(0,0,10);
-  delay(300);
-  couleur_static(0,0,20);
-  delay(300);
-  couleur_static(0,0,80);
-  delay(300);
-  strip.clear(); 
-  strip.show();
-}
-
-void animationStop() {
-  mode = 2;
-  delay(100);
-  couleur_static(10,0,0);
-  delay(300);
-  couleur_static(20,0,0);
-  delay(300);
-  couleur_static(50,0,0);
-  delay(300);
-  strip.clear(); 
-  strip.show();
 }
