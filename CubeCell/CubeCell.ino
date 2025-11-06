@@ -178,25 +178,10 @@ void boutonInterrupt() {
   else {
     if (millis() - tempsAppui > TEMPO_SLEEP){
       etatSortie = !etatSortie;
-      if (!etatSortie) {
-        animationStop();
-        delay(30);
-        Radio.Sleep();    // Stop la réception LoRa
-      }
+      if (!etatSortie) routineStop();
       digitalWrite(PIN_EN, etatSortie); // allume ou éteint le bandeau LED
-      if (etatSortie) {
-        animationStart();
-        delay(30);
-        // Redémarre la réception LoRa
-        Radio.Init(&RadioEvents);
-        Radio.SetChannel(RF_FREQUENCY);
-        Radio.SetRxConfig(MODEM_LORA, LORA_BANDWIDTH, LORA_SPREADING_FACTOR,
-                          LORA_CODINGRATE, 0, LORA_PREAMBLE_LENGTH,
-                          LORA_SYMBOL_TIMEOUT, LORA_FIX_LENGTH_PAYLOAD_ON,
-                          0, true, 0, 0, LORA_IQ_INVERSION_ON, true);
-        Radio.Rx(0);  // 0 = réception continue
-        delay(100);
-      }
+      if (etatSortie) routineStart();
+
       mode = 0;
 
       if (DEBUG_BOUTON) Serial.println("ON/OFF");
@@ -222,7 +207,6 @@ void loop() {
   // END TEMP
   if (!etatSortie) {
     lowPowerHandler();    // met en veille profond la carte = 0.24 mA
-    
   }
 
   else {
@@ -354,15 +338,27 @@ void OnRxDone(uint8_t *payload, uint16_t size, int16_t rssi, int8_t snr) {
   changementMode();
 }
 
-void animationStart() {
+void routineStart() {
   for (int k=0; k<25; ++k){
     animation_vague(0, 20, 0, 120, 250);
   }
+  delay(30);
+  Radio.Sleep();    // Stop la réception LoRa
 }
-void animationStop() {
+void routineStop() {
   for (int k=0; k<25; ++k){
     animation_vague(1, 20, 200, 20, 20);
   }
+  delay(30);
+  // Redémarre la réception LoRa
+  Radio.Init(&RadioEvents);
+  Radio.SetChannel(RF_FREQUENCY);
+  Radio.SetRxConfig(MODEM_LORA, LORA_BANDWIDTH, LORA_SPREADING_FACTOR,
+                    LORA_CODINGRATE, 0, LORA_PREAMBLE_LENGTH,
+                    LORA_SYMBOL_TIMEOUT, LORA_FIX_LENGTH_PAYLOAD_ON,
+                    0, true, 0, 0, LORA_IQ_INVERSION_ON, true);
+  Radio.Rx(0);  // 0 = réception continue
+  delay(100);
 }
 void couleur_static(int r, int g, int b){ // Affichage d'une couleur static
   for (int x = 0; x < WIDTH; x++) {
