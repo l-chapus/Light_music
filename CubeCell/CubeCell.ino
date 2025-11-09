@@ -76,53 +76,65 @@ void changementMode(){
       
       break;
     case 1:   // mode pour l'affichage de la musique
-      animation_vague(1, 20, 200, 10, 50);
+      animation_scintillement(0, 20, 200, 100, 20); 
+      //animation_scintillement(50);
       animationContinue = true;
       break;
     case 2:
-      animation_vague(0, 10, 0, 50, 250);
+      animation_scintillement(0, 20, 200, 100, 50); 
+      //animation_scintillement(10);
       animationContinue = true;
       break;
     case 3:
-      //animation_vague();
-      //animationContinue = true;
+      animation_explosion(150, 0, 10, 100);
+      animationContinue = true;
       break;
     case 4:
       couleur_static(0,25,0);
       animationContinue = false;
       break;
     case 5:
-      animation_matrix(); 
+      animation_matrix(100); 
       animationContinue = true;
       break;
     case 6:
-      animation_scintillement();
+      animation_scintillement(0, 20, 200, 90, 30);
       animationContinue = true;
       break;
-    
-    case 96:
-      animation_vague(dataLora[0], dataLora[1], dataLora[2], dataLora[3], dataLora[4]);   // colone static avec une couleur
-      animationContinue = true;
-      break;
-    case 97:
-      defilement(dataLora[0], dataLora[1], dataLora[2], dataLora[3], dataLora[4], dataLora[5]);   // défilement avec une couleur
-      animationContinue = true;
-      break;
-    
-    case 146:
-      if (dataReady){
-        animation_vague(dataLora[0], dataLora[1], dataLora[2], dataLora[3], dataLora[4]);   // colone static avec une couleur
+
+    case 143:
+      if (dataReady || animationContinue){
+        animation_scintillement(dataLora[0], dataLora[1], dataLora[2], dataLora[3], dataLora[4]);   
         dataReady = false;
         animationContinue = true;
-        mode = 96;        // Passe en mode continue
+      }
+      break;
+    case 144:
+      if (dataReady || animationContinue){
+        animation_matrix(dataLora[0]);   
+        dataReady = false;
+        animationContinue = true;
+      }
+      break;
+    case 145:
+      if (dataReady || animationContinue){
+        animation_explosion(dataLora[0], dataLora[1], dataLora[2], dataLora[3]);   
+        dataReady = false;
+        animationContinue = true;
+      }
+      break;
+    case 146:
+      if (dataReady || animationContinue){
+        animation_vague(dataLora[0], dataLora[1], dataLora[2], dataLora[3], dataLora[4]);   
+        dataReady = false;
+        animationContinue = true;
       }
       break;
     case 147:
-      if (dataReady){
+      if (dataReady || animationContinue){
         defilement(dataLora[0], dataLora[1], dataLora[2], dataLora[3], dataLora[4], dataLora[5]);   // défilement avec une couleur
         dataReady = false;
         animationContinue = true;
-        mode = 97;      // Passe en mode continue
       }
       break;
     case 148:
@@ -151,6 +163,7 @@ void changementMode(){
         strip.clear(); 
         strip.show();
         dataReady = false;
+        animationContinue = false;
       }
       break;
     case 200:
@@ -252,6 +265,7 @@ void affichage_musique(uint8_t amplitude[FFT_SIZE]) {
 
 void OnRxDone(uint8_t *payload, uint16_t size, int16_t rssi, int8_t snr) {
   uint8_t IdRecu = 0;
+  dataReady = false;
   
   memcpy(&IdRecu, payload, sizeof(IdRecu)); // Lecture de l'ID
   if (IdRecu != deviceID) return;           // si on ne vise pas ce composant
@@ -273,7 +287,7 @@ void OnRxDone(uint8_t *payload, uint16_t size, int16_t rssi, int8_t snr) {
   if (mode == 151){ // extraction de 0 variable
     dataReady = true;
   }
-  if (mode == 200){ // extraction de 1 variable
+  if (mode == 200 || mode == 144){ // extraction de 1 variable
     uint16_t expected_size = 1 * sizeof(uint8_t);
     if (size < expected_size) {
       Serial.println("ERREUR 250 : Paquet tronqué, données incomplètes ! ");
@@ -291,7 +305,7 @@ void OnRxDone(uint8_t *payload, uint16_t size, int16_t rssi, int8_t snr) {
       dataReady = true;
     }
   }
-  if (mode == 149 || mode == 148){ // extraction de 4 variables
+  if (mode == 149 || mode == 148 || mode == 145){ // extraction de 4 variables
     uint16_t expected_size = 4 * sizeof(uint8_t);
     if (size < expected_size) {
       Serial.println("ERREUR 248 : Paquet tronqué, données incomplètes !");
@@ -300,7 +314,7 @@ void OnRxDone(uint8_t *payload, uint16_t size, int16_t rssi, int8_t snr) {
       dataReady = true;
     }
   }
-  if (mode == 146){ // extraction de 5 variables
+  if (mode == 146 || mode == 143){ // extraction de 5 variables
     uint16_t expected_size = 5 * sizeof(uint8_t);
     if (size < expected_size) {
       Serial.println("ERREUR 247 : Paquet tronqué, données incomplètes !");
@@ -335,7 +349,7 @@ void OnRxDone(uint8_t *payload, uint16_t size, int16_t rssi, int8_t snr) {
     Serial.printf("RSSI: %d dBm, SNR: %d dB\n", rssi, snr);
     Serial.println("-------------------");
   }
-  changementMode();
+  if (dataReady) changementMode();
 }
 
 void routineStart() {
@@ -360,29 +374,29 @@ void routineStop() {
   Radio.Rx(0);  // 0 = réception continue
   delay(100);
 }
-void couleur_static(int r, int g, int b){ // Affichage d'une couleur static
+void couleur_static(int R, int G, int B){ // Affichage d'une couleur static
   for (int x = 0; x < WIDTH; x++) {
     for (int y = 0; y < HEIGHT; y++) {
-      setPixelColor(x, y, r, g, b); 
+      setPixelColor(x, y, R, G, B); 
     }
   }
   strip.show();
 }
-void ligne_couleur_static(int numLigne, int r, int g, int b){ // Affichage d'une ligne avec une couleur static
+void ligne_couleur_static(int R, int G, int B, int numLigne){ // Affichage d'une ligne avec une couleur static
   for (int x = 0; x < WIDTH; x++) {
-    setPixelColor(x, numLigne, r, g, b); 
+    setPixelColor(x, numLigne, R, G, B); 
   }
   delay(15);
   strip.show();
 }
-void colone_couleur_static(int numcolone, int r, int g, int b){ // Affichage d'une colone avec une couleur static
+void colone_couleur_static(int R, int G, int B, int numcolone){ // Affichage d'une colone avec une couleur static
   for (int y = 0; y < HEIGHT; y++) {
-    setPixelColor(numcolone, y, r, g, b); 
+    setPixelColor(numcolone, y, R, G, B); 
   }
   delay(15);
   strip.show();
 }
-void defilement(uint8_t sens, int vitesse, uint8_t R, uint8_t G, uint8_t B, uint8_t trainee) {
+void defilement(uint8_t R, uint8_t G, uint8_t B, int vitesse, uint8_t sens, uint8_t trainee) {
   static uint8_t frame = 0;  // position actuelle du défilement
 
   // ---  Atténue la couleur existante pour créer la traînée ---
@@ -441,7 +455,7 @@ void defilement(uint8_t sens, int vitesse, uint8_t R, uint8_t G, uint8_t B, uint
   frame = (frame + 1) % 10;
   delay(vitesse);
 }
-void animation_vague(uint8_t sens, int vitesse, uint8_t R, uint8_t G, uint8_t B) {
+void animation_vague(uint8_t R, uint8_t G, uint8_t B, int vitesse, uint8_t sens) {
   static int frame = 5;
   const int cx = WIDTH / 2;
   const int cy = HEIGHT / 2;
@@ -474,9 +488,25 @@ void animation_vague(uint8_t sens, int vitesse, uint8_t R, uint8_t G, uint8_t B)
   }
   delay(vitesse);
 }
+void animation_explosion(uint8_t R, uint8_t G, uint8_t B, int vitesse) {
+  const int cx = WIDTH / 2;
+  const int cy = HEIGHT / 2;
 
-
-void animation_matrix() {
+  for (int radius = 0; radius < max(WIDTH, HEIGHT); radius++) {
+    strip.clear();
+    for (int y = 0; y < HEIGHT; y++) {
+      for (int x = 0; x < WIDTH; x++) {
+        float dist = sqrt(pow(x - cx, 2) + pow(y - cy, 2));
+        if (abs(dist - radius) < 0.8) {
+          setPixelColor(x, y, R, G, B);
+        }
+      }
+    }
+    strip.show();
+    delay(vitesse);
+  }
+}
+void animation_matrix(int vitesse) {
   static int drops[10] = {0};
 
   // Fait descendre chaque colonne
@@ -501,14 +531,13 @@ void animation_matrix() {
   }
 
   strip.show();
-  delay(100);
+  delay(vitesse);
 }
-
-void animation_scintillement() {
+void animation_scintillement(uint8_t R, uint8_t G, uint8_t B, int vitesse, uint8_t remplissage) {
   for(int i=1; i<NUM_LEDS; i++){
-    if(random(0,10)<2) strip.setPixelColor(i, 30, 0 ,90);
+    if(random(0,100)<remplissage) strip.setPixelColor(i, R, G ,B);
     else strip.setPixelColor(i,0,0,0);
   }
   strip.show();
-  delay(100);
+  delay(vitesse);
 }

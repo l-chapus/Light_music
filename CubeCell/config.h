@@ -3,7 +3,7 @@
 
 // --- DEBUG---
 #define DEBUG_BOUTON false
-#define DEBUG_ANIMATION false
+#define DEBUG_ANIMATION true
 #define DEBUG_RECEPTION false
 
 // --- Pin pour la bande LED ---
