@@ -20,6 +20,11 @@ uint8_t mode = 0;
 static int frame = 0;
 bool animationContinue = false;
 
+unsigned long int tempsBatterie = 0;      // Temps pour la lecture de la batterie
+unsigned long int tempsInactivitee = 0;   // Temps pour l'inactivitée
+unsigned long int tempsCourant = 0;      // Temps pour la lecture de la batterie
+uint8_t niveauBatterie = 0;
+
 void setup() {
   pinMode(PIN_BOUTON, INPUT_PULLUP); // Bouton
   pinMode(PIN_EN, OUTPUT);           // Enable du convertisseur 5V
@@ -57,6 +62,10 @@ void setup() {
   deviceID = EEPROM.read(EEPROM_ADDR_ID);
   Serial.print("ID actuel lu depuis la Flash : ");
   Serial.println(deviceID);
+
+  tempsBatterie = millis();     // initialise le temps
+  tempsInactivitee = millis();  // initialise le temps
+  niveauBatterie = getPourcentageBatterie();
 }
 
 void setPixelColor(uint8_t x, uint8_t y, uint8_t R, uint8_t G, uint8_t B) {
@@ -72,6 +81,7 @@ uint32_t getPixelColor(uint8_t x, uint8_t y) {
 }
 
 void changementMode(){
+  tempsInactivitee = millis();      // détecte le changement de mode
   switch (mode) {
     case 0: // utilisation en DEBUG uniquement
       
@@ -80,7 +90,7 @@ void changementMode(){
       couleur_static(100,100,100);
       //animation_comet(0, 200, 20, 200, 5); 
       //animation_noise(50);
-      animationContinue = true;
+      animationContinue = false;
       break;
     case 2:
       //animation_comet(200, 50, 30, 30, 20); 
@@ -218,7 +228,7 @@ void boutonInterrupt() {
     if (millis() - tempsAppui > TEMPO_SLEEP){
       etatSortie = !etatSortie;
       if (!etatSortie) routineStop();
-      digitalWrite(PIN_EN, etatSortie); // allume ou éteint le bandeau LED
+      //digitalWrite(PIN_EN, etatSortie); // allume ou éteint le bandeau LED
       if (etatSortie) routineStart();
 
       mode = 0;
@@ -235,26 +245,60 @@ void boutonInterrupt() {
   }
 }
 
-void loop() { 
-  // TEMP
-  //float voltage = getBatteryVoltage();
-  //Serial.printf("Tension batterie : %.2f V\n", voltage);
-  //Serial.print(voltage);
-  
-  //Serial.println("--------------");
-  //delay(5000);
-  // END TEMP
-  if (!etatSortie) {
-    lowPowerHandler();    // met en veille profond la carte = 0.24 mA
+uint8_t getPourcentageBatterie(){
+  float voltage = getBatteryVoltage();
+
+  float niveauBatterie = 100.0 * (1 - exp(-0.0055 * (voltage - 3600))) /
+                     (1 - exp(-0.0055 * (4230 - 3600)));            // calcul issue du max et min de batterie, 100% => 4240 et 0% => 3820
+  niveauBatterie = constrain(niveauBatterie, 0, 100);
+ 
+  if (DEBUG_BATTERIE) {
+    Serial.printf("Tension batterie : %.2f V\n", voltage);
+    Serial.printf("Niveau calculé de la batterie : %.2f %\n", niveauBatterie);
+    Serial.printf("Temps courant : %d \n", tempsCourant);
+    Serial.println("--------------"); 
   }
 
-  else {
+  return niveauBatterie;
+}
+
+void loop() {  
+
+  if (!etatSortie) {      // Carte en veille
+    lowPowerHandler();    // met en veille profond la carte = 0.24 mA
+  }
+  else {                  // Carte allumée
+    tempsCourant = millis();
+    
+    if ((tempsCourant - tempsBatterie) > LIRE_NIVEAU * 1000) {      // lecture du niveau de batterie
+      tempsBatterie = tempsCourant;
+      int niveauBatterie = getPourcentageBatterie();
+
+      if (niveauBatterie <= 8) {   // fait clignoter une led pour signaler le faible pourcentage
+        animationContinue = false;
+        mode = 0;
+      }
+      if (niveauBatterie <= 2) {   // eteind de force la carte pour préservé la batterie restante
+        etatSortie = false;
+        routineStop();
+      }
+    }
+
+    if ((tempsCourant - tempsInactivitee) > TEMPS_INACTIVITEE * 1000 * 60) {      // eteind la carte au bout de TEMPS_INACTIVITEE minutes
+      tempsInactivitee = tempsCourant;
+
+      Serial.print("Inactivité détécté, la carte s'éteind \n");
+      Serial.println("--------------"); 
+
+      etatSortie = false;
+      routineStop();      
+    }
+
     Radio.IrqProcess();  // gestion des interruptions radio
     if (animationContinue){
       changementMode();
     }
   }
-
 }
 
 void affichage_musique(uint8_t amplitude[FFT_SIZE]) {
@@ -389,14 +433,17 @@ void OnRxDone(uint8_t *payload, uint16_t size, int16_t rssi, int8_t snr) {
 
 void routineStop() {
   frame = 0;
-  for (int k=0; k<50; ++k){
+  for (int k=0; k<25; ++k){
     animation_vague(200, 0, 30, 20, 1);
   }
   delay(30);
   Radio.Sleep();    // Stop la réception LoRa
+  delay(100);
+  digitalWrite(PIN_EN, etatSortie); // éteint le bandeau LED
 }
 void routineStart() {
   frame = 0;
+  digitalWrite(PIN_EN, etatSortie); // allume le bandeau LED
   delay(200);
   for (int k=0; k<25; ++k){
     animation_vague(0, 20, 200, 20, 0);
@@ -494,7 +541,6 @@ void defilement(uint8_t R, uint8_t G, uint8_t B, int vitesse, uint8_t sens, uint
   delay(vitesse);
 }
 void animation_vague(uint8_t R, uint8_t G, uint8_t B, int vitesse, uint8_t sens) {
-  static int frame = 0;
   const int cx = WIDTH / 2;
   const int cy = HEIGHT / 2;
   const int maxFrame = HEIGHT * 3; // amplitude max de l’onde
@@ -580,7 +626,6 @@ void animation_scintillement(uint8_t R, uint8_t G, uint8_t B, int vitesse, uint8
   delay(vitesse);
 }
 void animation_gradient_flow(uint8_t R_1, uint8_t G_1, uint8_t B_1, uint8_t R_2, uint8_t G_2, uint8_t B_2, int vitesse) {
-  static int frame = 0;
   for (uint8_t y = 0; y < HEIGHT; y++) {
     for (uint8_t x = 0; x < WIDTH; x++) {
       float t = (sin((x + frame) * 0.2) + 1) / 2.0;
@@ -595,7 +640,6 @@ void animation_gradient_flow(uint8_t R_1, uint8_t G_1, uint8_t B_1, uint8_t R_2,
   delay(vitesse);
 }
 void animation_breathing(uint8_t R, uint8_t G, uint8_t B, int vitesse) {
-  static int frame = 0;
   float intensity = (sin(frame * 0.05) + 1.0) / 2.0;
 
   for (uint8_t y = 0; y < HEIGHT; y++) {

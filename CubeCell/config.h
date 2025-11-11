@@ -5,6 +5,7 @@
 #define DEBUG_BOUTON false
 #define DEBUG_ANIMATION true
 #define DEBUG_RECEPTION false
+#define DEBUG_BATTERIE false
 
 // --- Pin pour la bande LED ---
 #define PIN_LEDS GPIO2
@@ -27,7 +28,7 @@
 #define PIN_EN GPIO5
 #define TEMPO_SLEEP 1000 // temporisation pour le ON/OFF en millisecondes
 
-const uint16_t FFT_SIZE = 16; // Taille de la FFT
+const uint8_t FFT_SIZE = 16; // Taille de la FFT
 
 const uint8_t correspondance_led[10][10] = {
   {100, 81, 80, 61, 60, 41, 40, 21, 20, 1},
@@ -45,5 +46,9 @@ const uint8_t correspondance_led[10][10] = {
 // --- Sauvegarde de l'id dans l'EEPROM ---
 #define EEPROM_SIZE 64       // taille réservée dans la Flash
 #define EEPROM_ADDR_ID 0     // adresse de stockage de ton ID
+
+// --- Batterie ---
+const uint8_t LIRE_NIVEAU = 90; // Temps entre 2 lectures du niveau de batterie (temps en secondes)
+const uint8_t TEMPS_INACTIVITEE = 1; // Temps après arrêt automatique (temps en minutes)
 
 #endif
