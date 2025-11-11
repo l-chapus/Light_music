@@ -73,7 +73,7 @@ void setPixelColor(uint8_t x, uint8_t y, uint8_t R, uint8_t G, uint8_t B) {
     Serial.println("ERREUR 2 : Coordonnées en dehors du tableau !"); 
     return;
   }
-  strip.setPixelColor(correspondance_led[y][x], strip.gamma32(strip.Color(R, G, B)));
+  strip.setPixelColor(correspondance_led[y][x], R, G, B);
   //if (DEBUG_ANIMATION) Serial.printf("Coordonnée demandée x : %d , y : %d et numéro de la LED : %d \n",x ,y ,correspondance_led[y][x]);
 }
 uint32_t getPixelColor(uint8_t x, uint8_t y) {
@@ -84,17 +84,15 @@ void changementMode(){
   tempsInactivitee = millis();      // détecte le changement de mode
   switch (mode) {
     case 0: // utilisation en DEBUG uniquement
-      
       break;
     case 1:   // mode pour l'affichage de la musique
-      couleur_static(100,100,100);
-      //animation_comet(0, 200, 20, 200, 5); 
-      //animation_noise(50);
-      animationContinue = false;
+      defilement(10, 80, 63, 20, 2, 4);
+      animationContinue = true;
       break;
     case 2:
       //animation_comet(200, 50, 30, 30, 20); 
-      animation_noise(10);
+      defilement(10, 0, 150, 50, 3, 2); 
+      //animation_noise(10);
       animationContinue = true;
       break;
     case 3:
@@ -121,7 +119,14 @@ void changementMode(){
       animation_breathing(0, 20, 200, 30); 
       animationContinue = true;
       break;
-
+    case 9:
+      defilement(100, 0, 50, 50, 3, 2); 
+      animationContinue = true;
+      break;
+    case 10:
+      defilement(10, 100, 80, 20, 0, 5); 
+      animationContinue = true;
+      break;
 
     case 141:
       if (dataReady || animationContinue){
@@ -200,6 +205,10 @@ void changementMode(){
         dataReady = false;
         animationContinue = false;
       }
+      break;  
+    case 152:       // mode pour l'affichage de la batterie faible
+      defilement(100, 0, 0, 200, 2, 3);
+      animationContinue = true;
       break;
     case 200:
       if (dataReady){
@@ -236,6 +245,7 @@ void boutonInterrupt() {
       if (DEBUG_BOUTON) Serial.println("ON/OFF");
     }
     else if (etatSortie == true){
+      if (mode > 100) mode = 0;
       mode++;                           // Incrémente le mode
       changementMode();
       if (DEBUG_BOUTON) Serial.printf("Mode : %d \n", mode);
@@ -244,7 +254,6 @@ void boutonInterrupt() {
     strip.show();
   }
 }
-
 uint8_t getPourcentageBatterie(){
   float voltage = getBatteryVoltage();
 
@@ -274,9 +283,11 @@ void loop() {
       tempsBatterie = tempsCourant;
       int niveauBatterie = getPourcentageBatterie();
 
+      niveauBatterie = 7; // TEMP pour test
+
       if (niveauBatterie <= 8) {   // fait clignoter une led pour signaler le faible pourcentage
-        animationContinue = false;
-        mode = 0;
+        mode = 152;
+        animationContinue = true;
       }
       if (niveauBatterie <= 2) {   // eteind de force la carte pour préservé la batterie restante
         etatSortie = false;
@@ -287,9 +298,11 @@ void loop() {
     if ((tempsCourant - tempsInactivitee) > TEMPS_INACTIVITEE * 1000 * 60) {      // eteind la carte au bout de TEMPS_INACTIVITEE minutes
       tempsInactivitee = tempsCourant;
 
-      Serial.print("Inactivité détécté, la carte s'éteind \n");
-      Serial.println("--------------"); 
-
+      if (DEBUG_BATTERIE){
+        Serial.print("Inactivité détécté, la carte s'éteind \n");
+        Serial.println("--------------"); 
+      }
+    
       etatSortie = false;
       routineStop();      
     }
@@ -482,8 +495,6 @@ void colone_couleur_static(int R, int G, int B, int numcolone){ // Affichage d'u
   strip.show();
 }
 void defilement(uint8_t R, uint8_t G, uint8_t B, int vitesse, uint8_t sens, uint8_t trainee) {
-  static uint8_t frame = 0;  // position actuelle du défilement
-
   // ---  Atténue la couleur existante pour créer la traînée ---
   for (uint8_t y = 0; y < 10; y++) {
     for (uint8_t x = 0; x < 10; x++) {
@@ -506,25 +517,25 @@ void defilement(uint8_t R, uint8_t G, uint8_t B, int vitesse, uint8_t sens, uint
   switch (sens) {
     case 0: { // Droite
       uint8_t x_actif = frame % 10;
-      colone_couleur_static(x_actif, R, G, B);
+      colone_couleur_static(R, G, B, x_actif);
       break;
     }
 
     case 1: { // Gauche
       uint8_t x_actif = (9 - (frame % 10));
-      colone_couleur_static(x_actif, R, G, B);
+      colone_couleur_static(R, G, B, x_actif);
       break;
     }
 
     case 2: { // Bas
       uint8_t y_actif = frame % 10;
-      ligne_couleur_static(y_actif, R, G, B);
+      ligne_couleur_static(R, G, B, y_actif);
       break;
     }
 
     case 3: { // Haut
       uint8_t y_actif = (9 - (frame % 10));
-      ligne_couleur_static(y_actif, R, G, B);
+      ligne_couleur_static(R, G, B, y_actif);
       break;
     }
 
