@@ -17,6 +17,7 @@ bool dataReady = false;
 CubeCell_NeoPixel strip(NUM_LEDS, PIN_LEDS, NEO_GRB + NEO_KHZ800);
 
 uint8_t mode = 0;
+static int frame = 0;
 bool animationContinue = false;
 
 void setup() {
@@ -59,11 +60,11 @@ void setup() {
 }
 
 void setPixelColor(uint8_t x, uint8_t y, uint8_t R, uint8_t G, uint8_t B) {
-  if (x > 10 || x < 0 || y > 10 || y < 0) {// si on est en dehors du tableau
+  if (x > WIDTH  || x < 0 || y > HEIGHT || y < 0) {// si on est en dehors du tableau
     Serial.println("ERREUR 2 : Coordonnées en dehors du tableau !"); 
     return;
   }
-  strip.setPixelColor(correspondance_led[y][x], R, G, B);
+  strip.setPixelColor(correspondance_led[y][x], strip.gamma32(strip.Color(R, G, B)));
   //if (DEBUG_ANIMATION) Serial.printf("Coordonnée demandée x : %d , y : %d et numéro de la LED : %d \n",x ,y ,correspondance_led[y][x]);
 }
 uint32_t getPixelColor(uint8_t x, uint8_t y) {
@@ -76,13 +77,14 @@ void changementMode(){
       
       break;
     case 1:   // mode pour l'affichage de la musique
-      animation_scintillement(0, 20, 200, 100, 20); 
-      //animation_scintillement(50);
+      couleur_static(100,100,100);
+      //animation_comet(0, 200, 20, 200, 5); 
+      //animation_noise(50);
       animationContinue = true;
       break;
     case 2:
-      animation_scintillement(0, 20, 200, 100, 50); 
-      //animation_scintillement(10);
+      //animation_comet(200, 50, 30, 30, 20); 
+      animation_noise(10);
       animationContinue = true;
       break;
     case 3:
@@ -101,7 +103,30 @@ void changementMode(){
       animation_scintillement(0, 20, 200, 90, 30);
       animationContinue = true;
       break;
+    case 7:
+      animation_gradient_flow(0, 20, 200, 10, 150, 0, 20); 
+      animationContinue = true;
+      break;
+    case 8: 
+      animation_breathing(0, 20, 200, 30); 
+      animationContinue = true;
+      break;
 
+
+    case 141:
+      if (dataReady || animationContinue){
+        animation_breathing(dataLora[0], dataLora[1], dataLora[2], dataLora[3]);   
+        dataReady = false;
+        animationContinue = true;
+      }
+      break;
+    case 142:
+      if (dataReady || animationContinue){
+        animation_gradient_flow(dataLora[0], dataLora[1], dataLora[2], dataLora[3], dataLora[4], dataLora[5], dataLora[6]);   
+        dataReady = false;
+        animationContinue = true;
+      }
+      break;
     case 143:
       if (dataReady || animationContinue){
         animation_scintillement(dataLora[0], dataLora[1], dataLora[2], dataLora[3], dataLora[4]);   
@@ -179,6 +204,7 @@ void changementMode(){
     default:
       strip.clear(); 
       strip.show();
+      animationContinue = false;
       break;
   } 
 }
@@ -305,7 +331,7 @@ void OnRxDone(uint8_t *payload, uint16_t size, int16_t rssi, int8_t snr) {
       dataReady = true;
     }
   }
-  if (mode == 149 || mode == 148 || mode == 145){ // extraction de 4 variables
+  if (mode == 149 || mode == 148 || mode == 145 || mode == 141){ // extraction de 4 variables
     uint16_t expected_size = 4 * sizeof(uint8_t);
     if (size < expected_size) {
       Serial.println("ERREUR 248 : Paquet tronqué, données incomplètes !");
@@ -332,6 +358,15 @@ void OnRxDone(uint8_t *payload, uint16_t size, int16_t rssi, int8_t snr) {
       dataReady = true;
     }
   }
+  if (mode == 142){ // extraction de 7 variables
+    uint16_t expected_size = 7 * sizeof(uint8_t);
+    if (size < expected_size) {
+      Serial.println("ERREUR 247 : Paquet tronqué, données incomplètes !");
+    } else {
+      memcpy(dataLora, payload + 2, 7 * sizeof(uint8_t));
+      dataReady = true;
+    }
+  }
   
    
   // --- Affichage DEBUG ---
@@ -352,16 +387,19 @@ void OnRxDone(uint8_t *payload, uint16_t size, int16_t rssi, int8_t snr) {
   if (dataReady) changementMode();
 }
 
-void routineStart() {
-  for (int k=0; k<25; ++k){
-    animation_vague(0, 20, 0, 120, 250);
+void routineStop() {
+  frame = 0;
+  for (int k=0; k<50; ++k){
+    animation_vague(200, 0, 30, 20, 1);
   }
   delay(30);
   Radio.Sleep();    // Stop la réception LoRa
 }
-void routineStop() {
+void routineStart() {
+  frame = 0;
+  delay(200);
   for (int k=0; k<25; ++k){
-    animation_vague(1, 20, 200, 20, 20);
+    animation_vague(0, 20, 200, 20, 0);
   }
   delay(30);
   // Redémarre la réception LoRa
@@ -456,7 +494,7 @@ void defilement(uint8_t R, uint8_t G, uint8_t B, int vitesse, uint8_t sens, uint
   delay(vitesse);
 }
 void animation_vague(uint8_t R, uint8_t G, uint8_t B, int vitesse, uint8_t sens) {
-  static int frame = 5;
+  static int frame = 0;
   const int cx = WIDTH / 2;
   const int cy = HEIGHT / 2;
   const int maxFrame = HEIGHT * 3; // amplitude max de l’onde
@@ -537,6 +575,48 @@ void animation_scintillement(uint8_t R, uint8_t G, uint8_t B, int vitesse, uint8
   for(int i=1; i<NUM_LEDS; i++){
     if(random(0,100)<remplissage) strip.setPixelColor(i, R, G ,B);
     else strip.setPixelColor(i,0,0,0);
+  }
+  strip.show();
+  delay(vitesse);
+}
+void animation_gradient_flow(uint8_t R_1, uint8_t G_1, uint8_t B_1, uint8_t R_2, uint8_t G_2, uint8_t B_2, int vitesse) {
+  static int frame = 0;
+  for (uint8_t y = 0; y < HEIGHT; y++) {
+    for (uint8_t x = 0; x < WIDTH; x++) {
+      float t = (sin((x + frame) * 0.2) + 1) / 2.0;
+      int r = R_1 + t * (R_2 - R_1);
+      int g = G_1 + t * (G_2 - G_1);
+      int b = B_1 + t * (B_2 - B_1);
+      setPixelColor(x, y, r, g, b);
+    }
+  }
+  strip.show();
+  frame++;
+  delay(vitesse);
+}
+void animation_breathing(uint8_t R, uint8_t G, uint8_t B, int vitesse) {
+  static int frame = 0;
+  float intensity = (sin(frame * 0.05) + 1.0) / 2.0;
+
+  for (uint8_t y = 0; y < HEIGHT; y++) {
+    for (uint8_t x = 0; x < WIDTH; x++) {
+      setPixelColor(x, y, R * intensity, G * intensity, B * intensity);
+    }
+  }
+
+  strip.show();
+  frame++;
+  delay(vitesse);
+}
+
+void animation_noise(int vitesse) {
+  for (uint8_t y = 0; y < HEIGHT; y++) {
+    for (uint8_t x = 0; x < WIDTH; x++) {
+      uint8_t r = random(255);
+      uint8_t g = random(255);
+      uint8_t b = random(255);
+      setPixelColor(x, y, r, r, r); 
+    }
   }
   strip.show();
   delay(vitesse);
