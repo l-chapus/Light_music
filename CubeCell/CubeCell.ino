@@ -282,9 +282,6 @@ void loop() {
     if ((tempsCourant - tempsBatterie) > LIRE_NIVEAU * 1000) {      // lecture du niveau de batterie
       tempsBatterie = tempsCourant;
       int niveauBatterie = getPourcentageBatterie();
-
-      niveauBatterie = 7; // TEMP pour test
-
       if (niveauBatterie <= 8) {   // fait clignoter une led pour signaler le faible pourcentage
         mode = 152;
         animationContinue = true;
