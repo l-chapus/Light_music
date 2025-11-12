@@ -20,9 +20,9 @@ uint8_t mode = 0;
 static int frame = 0;
 bool animationContinue = false;
 
-unsigned long int tempsBatterie = 0;      // Temps pour la lecture de la batterie
-unsigned long int tempsInactivitee = 0;   // Temps pour l'inactivitée
-unsigned long int tempsCourant = 0;      // Temps pour la lecture de la batterie
+uint32_t tempsBatterie = 0;      // Temps pour la lecture de la batterie
+uint32_t tempsInactivitee = 0;   // Temps pour l'inactivitée
+uint32_t tempsCourant = 0;      // Temps pour la lecture de la batterie
 uint8_t niveauBatterie = 0;
 
 void setup() {
@@ -78,6 +78,21 @@ void setPixelColor(uint8_t x, uint8_t y, uint8_t R, uint8_t G, uint8_t B) {
 }
 uint32_t getPixelColor(uint8_t x, uint8_t y) {
   return strip.getPixelColor(correspondance_led[y][x]);
+}
+uint8_t getPourcentageBatterie(){
+  float voltage = getBatteryVoltage();
+  float niveauBatterie = 100.0 * (1 - exp(-0.0055 * (voltage - 3600))) /
+                     (1 - exp(-0.0055 * (4230 - 3600)));            // calcul issue du max et min de batterie, 100% => 4240 et 0% => 3820
+  niveauBatterie = constrain(niveauBatterie, 0, 100);
+ 
+  if (DEBUG_BATTERIE) {
+    Serial.printf("Tension batterie : %.2f V\n", voltage);
+    Serial.printf("Niveau calculé de la batterie : %.2f %\n", niveauBatterie);
+    Serial.printf("Temps courant : %d \n", tempsCourant);
+    Serial.println("--------------"); 
+  }
+
+  return niveauBatterie;
 }
 
 void changementMode(){
@@ -210,6 +225,15 @@ void changementMode(){
       defilement(100, 0, 0, 200, 2, 3);
       animationContinue = true;
       break;
+    case 153:       // mode pour renvoyer le niveau de batterie
+      static uint8_t niveauBatterieToSend = 0; 
+      niveauBatterieToSend = getPourcentageBatterie();
+      delay(100);
+      Radio.Send(&niveauBatterieToSend, sizeof(niveauBatterieToSend));
+      delay(20);
+      mode = 0;
+      animationContinue = false;
+      break;
     case 200:
       if (dataReady){
         if (deviceID != dataLora[0]){
@@ -254,22 +278,7 @@ void boutonInterrupt() {
     strip.show();
   }
 }
-uint8_t getPourcentageBatterie(){
-  float voltage = getBatteryVoltage();
 
-  float niveauBatterie = 100.0 * (1 - exp(-0.0055 * (voltage - 3600))) /
-                     (1 - exp(-0.0055 * (4230 - 3600)));            // calcul issue du max et min de batterie, 100% => 4240 et 0% => 3820
-  niveauBatterie = constrain(niveauBatterie, 0, 100);
- 
-  if (DEBUG_BATTERIE) {
-    Serial.printf("Tension batterie : %.2f V\n", voltage);
-    Serial.printf("Niveau calculé de la batterie : %.2f %\n", niveauBatterie);
-    Serial.printf("Temps courant : %d \n", tempsCourant);
-    Serial.println("--------------"); 
-  }
-
-  return niveauBatterie;
-}
 
 void loop() {  
 
@@ -292,15 +301,20 @@ void loop() {
       }
     }
 
-    if ((tempsCourant - tempsInactivitee) > TEMPS_INACTIVITEE * 1000 * 60) {      // eteind la carte au bout de TEMPS_INACTIVITEE minutes
+    if ((tempsCourant - tempsInactivitee) > TEMPS_INACTIVITEE * 1000 * 60 && tempsCourant > tempsInactivitee) {      // eteind la carte au bout de TEMPS_INACTIVITEE minutes
       tempsInactivitee = tempsCourant;
-
+      etatSortie = false;
+      
       if (DEBUG_BATTERIE){
+        Serial.println("--------------"); 
         Serial.print("Inactivité détécté, la carte s'éteind \n");
+        Serial.print("Temps courant : "); Serial.println(tempsCourant);
+        Serial.print("Temps inactivité : "); Serial.println(tempsInactivitee);
+        Serial.print("Temps après calcul : "); Serial.println(tempsCourant - tempsInactivitee);
+        Serial.print("Temps après calcul abs : "); Serial.println(abs(tempsCourant - tempsInactivitee));
         Serial.println("--------------"); 
       }
-    
-      etatSortie = false;
+      
       routineStop();      
     }
 
@@ -364,7 +378,7 @@ void OnRxDone(uint8_t *payload, uint16_t size, int16_t rssi, int8_t snr) {
     dataReady = true;
   }
 
-  if (mode == 151){ // extraction de 0 variable
+  if (mode == 151 || mode == 153){ // extraction de 0 variable
     dataReady = true;
   }
   if (mode == 200 || mode == 144){ // extraction de 1 variable
