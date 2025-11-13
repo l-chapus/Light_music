@@ -17,6 +17,7 @@ bool dataReady = false;
 CubeCell_NeoPixel strip(NUM_LEDS, PIN_LEDS, NEO_GRB + NEO_KHZ800);
 
 uint8_t mode = 0;
+uint8_t modePrecedent = 0;
 static int frame = 0;
 bool animationContinue = false;
 
@@ -96,18 +97,23 @@ uint8_t getPourcentageBatterie(){
 }
 
 void changementMode(){
-  tempsInactivitee = millis();      // détecte le changement de mode
+  if (modePrecedent != mode) {          // détecte le changement de mode
+    tempsInactivitee = millis();      
+    modePrecedent = mode;
+  }
+  
   switch (mode) {
     case 0: // utilisation en DEBUG uniquement
       break;
     case 1:   // mode pour l'affichage de la musique
-      defilement(10, 80, 63, 20, 2, 4);
+      //defilement(10, 80, 63, 20, 2, 4);
+      animation_noise(50, 1);
       animationContinue = true;
       break;
     case 2:
       //animation_comet(200, 50, 30, 30, 20); 
-      defilement(10, 0, 150, 50, 3, 2); 
-      //animation_noise(10);
+      //defilement(10, 0, 150, 50, 3, 2); 
+      animation_noise(20, 10);
       animationContinue = true;
       break;
     case 3:
@@ -142,7 +148,18 @@ void changementMode(){
       defilement(10, 100, 80, 20, 0, 5); 
       animationContinue = true;
       break;
+    case 11:
+      animation_noise(40, 6);
+      animationContinue = true;
+      break;
 
+    case 140:
+      if (dataReady || animationContinue){
+        animation_noise(dataLora[0], dataLora[1]);   
+        dataReady = false;
+        animationContinue = true;
+      }
+      break;
     case 141:
       if (dataReady || animationContinue){
         animation_breathing(dataLora[0], dataLora[1], dataLora[2], dataLora[3]);   
@@ -279,7 +296,6 @@ void boutonInterrupt() {
   }
 }
 
-
 void loop() {  
 
   if (!etatSortie) {      // Carte en veille
@@ -387,6 +403,15 @@ void OnRxDone(uint8_t *payload, uint16_t size, int16_t rssi, int8_t snr) {
       Serial.println("ERREUR 250 : Paquet tronqué, données incomplètes ! ");
     } else {
       memcpy(dataLora, payload + 2, 1 * sizeof(uint8_t));
+      dataReady = true;
+    }
+  }
+  if (mode == 140){ // extraction de 2 variable
+    uint16_t expected_size = 2 * sizeof(uint8_t);
+    if (size < expected_size) {
+      Serial.println("ERREUR 250 : Paquet tronqué, données incomplètes ! ");
+    } else {
+      memcpy(dataLora, payload + 2, 2 * sizeof(uint8_t));
       dataReady = true;
     }
   }
@@ -681,14 +706,14 @@ void animation_breathing(uint8_t R, uint8_t G, uint8_t B, uint8_t vitesse) {
   frame++;
   delay(vitesse);
 }
-
-void animation_noise(uint8_t vitesse) {
+void animation_noise(uint8_t vitesse, uint8_t intensite) {
+  if (intensite > 10) return;
   for (uint8_t y = 0; y < HEIGHT; y++) {
     for (uint8_t x = 0; x < WIDTH; x++) {
-      uint8_t r = random(255);
-      uint8_t g = random(255);
-      uint8_t b = random(255);
-      setPixelColor(x, y, r, r, r); 
+      uint8_t r = min(255, random(25)*intensite);
+      uint8_t g = min(255, random(25)*intensite);
+      uint8_t b = min(255, random(25)*intensite);
+      setPixelColor(x, y, r, g, b); 
     }
   }
   strip.show();
