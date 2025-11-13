@@ -96,8 +96,6 @@ void setup() {
 }
 
 uint8_t get_battery_level(uint8_t ID) {
-  Serial.println("Lecture du niveau de batterie.");
-
   uint8_t mode = 153;
   LoRa.beginPacket();
   LoRa.write((uint8_t*)&ID, sizeof(bouton_compteur)); // Envoie l'entier sur 2 octets
@@ -122,31 +120,17 @@ uint8_t get_battery_level(uint8_t ID) {
 }
 
 void fonction_test() {
-  get_battery_level(1);
-  delay(1000);
+  //get_battery_level(1);
+  //delay(1000);
 
   // Fonction vide pour test
   uint8_t ID = 1;
-  uint8_t mode = 146;
-  uint8_t R = 10;
+  uint8_t mode = 138;
+  uint8_t R = 80;
   uint8_t G = 10;
   uint8_t B = 150;
-  uint8_t sens = 1;
-  uint8_t vitesse = 40;
-  LoRa.beginPacket();
-  LoRa.write((uint8_t*)&ID, sizeof(bouton_compteur)); // Envoie l'entier sur 2 octets
-  LoRa.write((uint8_t*)&mode, sizeof(bouton_compteur)); // Envoie l'entier sur 2 octets
-  LoRa.write((uint8_t*)&R, sizeof(uint8_t)); // Envoie l'entier sur 2 octets
-  LoRa.write((uint8_t*)&G, sizeof(uint8_t)); // Envoie l'entier sur 2 octets
-  LoRa.write((uint8_t*)&B, sizeof(uint8_t)); // Envoie l'entier sur 2 octets
-   LoRa.write((uint8_t*)&vitesse, sizeof(uint8_t)); // Envoie l'entier sur 2 octets
-  LoRa.write((uint8_t*)&sens, sizeof(bouton_compteur)); // Envoie l'entier sur 2 octets
- 
-  LoRa.endPacket();
-
-  delay(5000);
-  sens = 0;
-  R = 200;
+  uint8_t vitesse = 20;
+  uint8_t sens = 254;
   LoRa.beginPacket();
   LoRa.write((uint8_t*)&ID, sizeof(bouton_compteur)); // Envoie l'entier sur 2 octets
   LoRa.write((uint8_t*)&mode, sizeof(bouton_compteur)); // Envoie l'entier sur 2 octets
@@ -154,8 +138,22 @@ void fonction_test() {
   LoRa.write((uint8_t*)&G, sizeof(uint8_t)); // Envoie l'entier sur 2 octets
   LoRa.write((uint8_t*)&B, sizeof(uint8_t)); // Envoie l'entier sur 2 octets
   LoRa.write((uint8_t*)&vitesse, sizeof(uint8_t)); // Envoie l'entier sur 2 octets
-  LoRa.write((uint8_t*)&sens, sizeof(bouton_compteur)); // Envoie l'entier sur 2 octets
+  LoRa.write((uint8_t*)&sens, sizeof(uint8_t)); // Envoie l'entier sur 2 octets
+ 
   LoRa.endPacket();
+
+  //delay(5000);
+  //sens = 0;
+  //R = 200;
+  //LoRa.beginPacket();
+  //LoRa.write((uint8_t*)&ID, sizeof(bouton_compteur)); // Envoie l'entier sur 2 octets
+  //LoRa.write((uint8_t*)&mode, sizeof(bouton_compteur)); // Envoie l'entier sur 2 octets
+  //LoRa.write((uint8_t*)&R, sizeof(uint8_t)); // Envoie l'entier sur 2 octets
+  //LoRa.write((uint8_t*)&G, sizeof(uint8_t)); // Envoie l'entier sur 2 octets
+  //LoRa.write((uint8_t*)&B, sizeof(uint8_t)); // Envoie l'entier sur 2 octets
+  //LoRa.write((uint8_t*)&vitesse, sizeof(uint8_t)); // Envoie l'entier sur 2 octets
+  //LoRa.write((uint8_t*)&sens, sizeof(bouton_compteur)); // Envoie l'entier sur 2 octets
+  //LoRa.endPacket();
 }
 
 void loop() {

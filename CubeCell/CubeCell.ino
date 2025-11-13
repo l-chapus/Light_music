@@ -97,7 +97,7 @@ uint8_t getPourcentageBatterie(){
 }
 
 void changementMode(){
-  if (modePrecedent != mode) {          // détecte le changement de mode
+  if (modePrecedent != mode || dataReady) {          // détecte le changement de mode
     tempsInactivitee = millis();      
     modePrecedent = mode;
   }
@@ -106,14 +106,15 @@ void changementMode(){
     case 0: // utilisation en DEBUG uniquement
       break;
     case 1:   // mode pour l'affichage de la musique
-      //defilement(10, 80, 63, 20, 2, 4);
-      animation_noise(50, 1);
+      animation_stroboscope(10, 10, 10, 100);
+      frame = 10;
+      //animation_noise(50, 1);
       animationContinue = true;
       break;
     case 2:
-      //animation_comet(200, 50, 30, 30, 20); 
-      //defilement(10, 0, 150, 50, 3, 2); 
-      animation_noise(20, 10);
+      frame = 2;
+      animation_stroboscope(10, 0, 150, 50); 
+      //animation_noise(20, 10);
       animationContinue = true;
       break;
     case 3:
@@ -152,7 +153,28 @@ void changementMode(){
       animation_noise(40, 6);
       animationContinue = true;
       break;
+    case 12:
+      frame = 150;
+      animation_stroboscope(150, 20, 10, 50); 
+      animationContinue = true;
+      break;
 
+    case 138:
+      if (dataReady || animationContinue){
+        frame = dataLora[4];
+        dataReady = false;
+        animationContinue = true;
+        mode = 139;
+        animation_stroboscope(dataLora[0], dataLora[1], dataLora[2], dataLora[3]);   
+      }
+      break;
+    case 139:
+      if (animationContinue){     // appelé uniquement par le mode 138
+        animation_stroboscope(dataLora[0], dataLora[1], dataLora[2], dataLora[3]);   
+        dataReady = false;
+        animationContinue = true;
+      }
+      break;
     case 140:
       if (dataReady || animationContinue){
         animation_noise(dataLora[0], dataLora[1]);   
@@ -433,7 +455,7 @@ void OnRxDone(uint8_t *payload, uint16_t size, int16_t rssi, int8_t snr) {
       dataReady = true;
     }
   }
-  if (mode == 146 || mode == 143){ // extraction de 5 variables
+  if (mode == 146 || mode == 143 || mode == 138){ // extraction de 5 variables
     uint16_t expected_size = 5 * sizeof(uint8_t);
     if (size < expected_size) {
       Serial.println("ERREUR 247 : Paquet tronqué, données incomplètes !");
@@ -718,4 +740,16 @@ void animation_noise(uint8_t vitesse, uint8_t intensite) {
   }
   strip.show();
   delay(vitesse);
+}
+void animation_stroboscope(uint8_t R, uint8_t G, uint8_t B, uint8_t vitesse){
+  if (frame > 0) {
+    couleur_static(R, G, B);
+    strip.show();
+    delay(vitesse);
+    strip.clear();
+    strip.show();
+    delay(vitesse);
+    if (frame != 255) frame--;
+  }
+  
 }

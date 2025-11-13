@@ -5,7 +5,7 @@
 #define DEBUG_BOUTON false
 #define DEBUG_ANIMATION true
 #define DEBUG_RECEPTION false
-#define DEBUG_BATTERIE false
+#define DEBUG_BATTERIE true
 
 // --- Pin pour la bande LED ---
 #define PIN_LEDS GPIO2
@@ -49,6 +49,6 @@ const uint8_t correspondance_led[10][10] = {
 
 // --- Batterie ---
 const uint8_t LIRE_NIVEAU = 40; // Temps entre 2 lectures du niveau de batterie (temps en secondes)
-const uint8_t TEMPS_INACTIVITEE = 1; // Temps après arrêt automatique (temps en minutes)
+const uint8_t TEMPS_INACTIVITEE = 5; // Temps après arrêt automatique (temps en minutes)
 
 #endif
