@@ -483,7 +483,7 @@ void routineStart() {
   Radio.Rx(0);  // 0 = réception continue
   delay(100);
 }
-void couleur_static(int R, int G, int B){ // Affichage d'une couleur static
+void couleur_static(uint8_t R, uint8_t G, uint8_t B){ // Affichage d'une couleur static
   for (int x = 0; x < WIDTH; x++) {
     for (int y = 0; y < HEIGHT; y++) {
       setPixelColor(x, y, R, G, B); 
@@ -491,21 +491,25 @@ void couleur_static(int R, int G, int B){ // Affichage d'une couleur static
   }
   strip.show();
 }
-void ligne_couleur_static(int R, int G, int B, int numLigne){ // Affichage d'une ligne avec une couleur static
+void ligne_couleur_static(uint8_t R, uint8_t G, uint8_t B, uint8_t numLigne){ // Affichage d'une ligne avec une couleur static
+  if (numLigne > HEIGHT) return;
   for (int x = 0; x < WIDTH; x++) {
     setPixelColor(x, numLigne, R, G, B); 
   }
   delay(15);
   strip.show();
 }
-void colone_couleur_static(int R, int G, int B, int numcolone){ // Affichage d'une colone avec une couleur static
+void colone_couleur_static(uint8_t R, uint8_t G, uint8_t B, uint8_t numcolone){ // Affichage d'une colone avec une couleur static
+  if (numcolone > WIDTH) return;
   for (int y = 0; y < HEIGHT; y++) {
     setPixelColor(numcolone, y, R, G, B); 
   }
   delay(15);
   strip.show();
 }
-void defilement(uint8_t R, uint8_t G, uint8_t B, int vitesse, uint8_t sens, uint8_t trainee) {
+void defilement(uint8_t R, uint8_t G, uint8_t B, uint8_t vitesse, uint8_t sens, uint8_t trainee) {
+  if (trainee > WIDTH) return;
+  
   // ---  Atténue la couleur existante pour créer la traînée ---
   for (uint8_t y = 0; y < 10; y++) {
     for (uint8_t x = 0; x < 10; x++) {
@@ -562,7 +566,9 @@ void defilement(uint8_t R, uint8_t G, uint8_t B, int vitesse, uint8_t sens, uint
   frame = (frame + 1) % 10;
   delay(vitesse);
 }
-void animation_vague(uint8_t R, uint8_t G, uint8_t B, int vitesse, uint8_t sens) {
+void animation_vague(uint8_t R, uint8_t G, uint8_t B, uint8_t vitesse, uint8_t sens) {
+  if (sens != 0 && sens != 1) return;
+
   const int cx = WIDTH / 2;
   const int cy = HEIGHT / 2;
   const int maxFrame = HEIGHT * 3; // amplitude max de l’onde
@@ -594,7 +600,7 @@ void animation_vague(uint8_t R, uint8_t G, uint8_t B, int vitesse, uint8_t sens)
   }
   delay(vitesse);
 }
-void animation_explosion(uint8_t R, uint8_t G, uint8_t B, int vitesse) {
+void animation_explosion(uint8_t R, uint8_t G, uint8_t B, uint8_t vitesse) {
   const int cx = WIDTH / 2;
   const int cy = HEIGHT / 2;
 
@@ -612,7 +618,7 @@ void animation_explosion(uint8_t R, uint8_t G, uint8_t B, int vitesse) {
     delay(vitesse);
   }
 }
-void animation_matrix(int vitesse) {
+void animation_matrix(uint8_t vitesse) {
   static int drops[10] = {0};
 
   // Fait descendre chaque colonne
@@ -639,7 +645,8 @@ void animation_matrix(int vitesse) {
   strip.show();
   delay(vitesse);
 }
-void animation_scintillement(uint8_t R, uint8_t G, uint8_t B, int vitesse, uint8_t remplissage) {
+void animation_scintillement(uint8_t R, uint8_t G, uint8_t B, uint8_t vitesse, uint8_t remplissage) {
+  if (remplissage > 100) return;
   for(int i=1; i<NUM_LEDS; i++){
     if(random(0,100)<remplissage) strip.setPixelColor(i, R, G ,B);
     else strip.setPixelColor(i,0,0,0);
@@ -647,7 +654,7 @@ void animation_scintillement(uint8_t R, uint8_t G, uint8_t B, int vitesse, uint8
   strip.show();
   delay(vitesse);
 }
-void animation_gradient_flow(uint8_t R_1, uint8_t G_1, uint8_t B_1, uint8_t R_2, uint8_t G_2, uint8_t B_2, int vitesse) {
+void animation_gradient_flow(uint8_t R_1, uint8_t G_1, uint8_t B_1, uint8_t R_2, uint8_t G_2, uint8_t B_2, uint8_t vitesse) {
   for (uint8_t y = 0; y < HEIGHT; y++) {
     for (uint8_t x = 0; x < WIDTH; x++) {
       float t = (sin((x + frame) * 0.2) + 1) / 2.0;
@@ -661,7 +668,7 @@ void animation_gradient_flow(uint8_t R_1, uint8_t G_1, uint8_t B_1, uint8_t R_2,
   frame++;
   delay(vitesse);
 }
-void animation_breathing(uint8_t R, uint8_t G, uint8_t B, int vitesse) {
+void animation_breathing(uint8_t R, uint8_t G, uint8_t B, uint8_t vitesse) {
   float intensity = (sin(frame * 0.05) + 1.0) / 2.0;
 
   for (uint8_t y = 0; y < HEIGHT; y++) {
@@ -675,7 +682,7 @@ void animation_breathing(uint8_t R, uint8_t G, uint8_t B, int vitesse) {
   delay(vitesse);
 }
 
-void animation_noise(int vitesse) {
+void animation_noise(uint8_t vitesse) {
   for (uint8_t y = 0; y < HEIGHT; y++) {
     for (uint8_t x = 0; x < WIDTH; x++) {
       uint8_t r = random(255);

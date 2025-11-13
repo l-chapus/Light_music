@@ -4,8 +4,8 @@
 // --- DEBUG---
 #define DEBUG_BOUTON false
 #define DEBUG_ANIMATION true
-#define DEBUG_RECEPTION true
-#define DEBUG_BATTERIE true
+#define DEBUG_RECEPTION false
+#define DEBUG_BATTERIE false
 
 // --- Pin pour la bande LED ---
 #define PIN_LEDS GPIO2
