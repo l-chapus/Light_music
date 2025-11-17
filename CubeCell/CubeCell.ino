@@ -273,6 +273,11 @@ void changementMode(){
       mode = 0;
       animationContinue = false;
       break;
+    case 154:
+      mode = 0;
+      animationContinue = false;
+      routineStop();
+      break;
     case 200:
       if (dataReady){
         if (deviceID != dataLora[0]){
@@ -363,36 +368,11 @@ void loop() {
   }
 }
 
-void affichage_musique(uint8_t amplitude[FFT_SIZE]) {
-  strip.clear();
-
-  // On découpe le bandeau en (FFT_SIZE) segments
-  // Exemple : 120 LEDs / (FFT_SIZE) = nombre de LEDs par bande
-  int leds_per_band = NUM_LEDS / (FFT_SIZE);
-
-  for (int band = 0; band < FFT_SIZE; band++) {
-    // Récupère l’amplitude et la mappe sur une intensité 0..255
-    int level = amplitude[band];
-    if (level > leds_per_band) level = leds_per_band;
-
-    // Choix d’une couleur en fonction de la bande (dégradé spectral)
-    uint32_t color = strip.Color(
-      (band * 5) % 155,          // rouge varie
-      (255 - (band * 8)) % 155,  // vert varie
-      (band * 15) % 155          // bleu varie
-    );
-
-    // Allume les LEDs correspondant au niveau de cette bande
-    int start = band * leds_per_band;
-    for (int i = 0; i < level; i++) {
-      int led_index = start + i;
-      if (led_index < NUM_LEDS) {
-        strip.setPixelColor(led_index, color);
-      }
-    }
-  }
-
-  strip.show();
+bool extractPayload(uint8_t *payload, uint16_t sizePayload, uint8_t n) {
+  if (sizePayload < n * sizeof(uint8_t)) return false;
+  memcpy(dataLora, payload + 2, n * sizeof(uint8_t));
+  dataReady = true;
+  return true;
 }
 
 void OnRxDone(uint8_t *payload, uint16_t size, int16_t rssi, int8_t snr) {
@@ -404,83 +384,43 @@ void OnRxDone(uint8_t *payload, uint16_t size, int16_t rssi, int8_t snr) {
 
   memcpy(&mode, payload + 1, sizeof(mode)); // Lecture du mode d'affichage
 
-  if (mode == 1){
-    // Vérif si assez de données pour la FFT
-    uint16_t expected_size = 2 + (FFT_SIZE) * sizeof(uint8_t);
-    if (size < expected_size) {
-      Serial.println("ERREUR 1 : Paquet tronqué, données FFT incomplètes !");
-    } else {
-      memcpy(dataLora, payload + 2, (FFT_SIZE) * sizeof(uint8_t));
-    }
-    affichage_musique(dataLora);
-    dataReady = true;
-  }
-
-  if (mode == 151 || mode == 153){ // extraction de 0 variable
+  if (mode == 151 || mode == 153 || mode == 154){ // extraction de 0 variable
     dataReady = true;
   }
   if (mode == 200 || mode == 144){ // extraction de 1 variable
-    uint16_t expected_size = 1 * sizeof(uint8_t);
-    if (size < expected_size) {
+    if (!extractPayload(payload, size, 1)) {
       Serial.println("ERREUR 250 : Paquet tronqué, données incomplètes ! ");
-    } else {
-      memcpy(dataLora, payload + 2, 1 * sizeof(uint8_t));
-      dataReady = true;
-    }
+    } 
   }
   if (mode == 140){ // extraction de 2 variable
-    uint16_t expected_size = 2 * sizeof(uint8_t);
-    if (size < expected_size) {
-      Serial.println("ERREUR 250 : Paquet tronqué, données incomplètes ! ");
-    } else {
-      memcpy(dataLora, payload + 2, 2 * sizeof(uint8_t));
-      dataReady = true;
-    }
+    if (!extractPayload(payload, size, 2)) {
+      Serial.println("ERREUR 255 : Paquet tronqué, données incomplètes ! ");
+    } 
   }
   if (mode == 150){ // extraction de 3 variables
-    uint16_t expected_size = 3 * sizeof(uint8_t);
-    if (size < expected_size) {
-      Serial.println("ERREUR 249 : Paquet tronqué, données incomplètes ! ");
-    } else {
-      memcpy(dataLora, payload + 2, 3 * sizeof(uint8_t));
-      dataReady = true;
-    }
+    if (!extractPayload(payload, size, 3)) {
+      Serial.println("ERREUR 255 : Paquet tronqué, données incomplètes ! ");
+    } 
   }
   if (mode == 149 || mode == 148 || mode == 145 || mode == 141){ // extraction de 4 variables
-    uint16_t expected_size = 4 * sizeof(uint8_t);
-    if (size < expected_size) {
-      Serial.println("ERREUR 248 : Paquet tronqué, données incomplètes !");
-    } else {
-      memcpy(dataLora, payload + 2, 4 * sizeof(uint8_t));
-      dataReady = true;
-    }
+    if (!extractPayload(payload, size, 4)) {
+      Serial.println("ERREUR 255 : Paquet tronqué, données incomplètes ! ");
+    } 
   }
   if (mode == 146 || mode == 143 || mode == 138){ // extraction de 5 variables
-    uint16_t expected_size = 5 * sizeof(uint8_t);
-    if (size < expected_size) {
-      Serial.println("ERREUR 247 : Paquet tronqué, données incomplètes !");
-    } else {
-      memcpy(dataLora, payload + 2, 5 * sizeof(uint8_t));
-      dataReady = true;
-    }
+    if (!extractPayload(payload, size, 5)) {
+      Serial.println("ERREUR 255 : Paquet tronqué, données incomplètes ! ");
+    } 
   }
   if (mode == 147){ // extraction de 6 variables
-    uint16_t expected_size = 6 * sizeof(uint8_t);
-    if (size < expected_size) {
-      Serial.println("ERREUR 246 : Paquet tronqué, données incomplètes !");
-    } else {
-      memcpy(dataLora, payload + 2, 6 * sizeof(uint8_t));
-      dataReady = true;
-    }
+    if (!extractPayload(payload, size, 6)) {
+      Serial.println("ERREUR 255 : Paquet tronqué, données incomplètes ! ");
+    } 
   }
   if (mode == 142){ // extraction de 7 variables
-    uint16_t expected_size = 7 * sizeof(uint8_t);
-    if (size < expected_size) {
-      Serial.println("ERREUR 247 : Paquet tronqué, données incomplètes !");
-    } else {
-      memcpy(dataLora, payload + 2, 7 * sizeof(uint8_t));
-      dataReady = true;
-    }
+    if (!extractPayload(payload, size, 7)) {
+      Serial.println("ERREUR 255 : Paquet tronqué, données incomplètes ! ");
+    } 
   }
   
    
@@ -751,5 +691,4 @@ void animation_stroboscope(uint8_t R, uint8_t G, uint8_t B, uint8_t vitesse){
     delay(vitesse);
     if (frame != 255) frame--;
   }
-  
 }

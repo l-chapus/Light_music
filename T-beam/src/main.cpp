@@ -125,12 +125,12 @@ void fonction_test() {
 
   // Fonction vide pour test
   uint8_t ID = 1;
-  uint8_t mode = 138;
+  uint8_t mode = 139;
   uint8_t R = 80;
   uint8_t G = 10;
   uint8_t B = 150;
   uint8_t vitesse = 20;
-  uint8_t sens = 254;
+  uint8_t sens = 20;
   LoRa.beginPacket();
   LoRa.write((uint8_t*)&ID, sizeof(bouton_compteur)); // Envoie l'entier sur 2 octets
   LoRa.write((uint8_t*)&mode, sizeof(bouton_compteur)); // Envoie l'entier sur 2 octets
