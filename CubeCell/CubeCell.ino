@@ -105,16 +105,12 @@ void changementMode(){
   switch (mode) {
     case 0: // utilisation en DEBUG uniquement
       break;
-    case 1:   // mode pour l'affichage de la musique
-      animation_stroboscope(10, 10, 10, 100);
-      frame = 10;
-      //animation_noise(50, 1);
+    case 1:
+      animation_black_hole(250, 0, 10, 20, 1);
       animationContinue = true;
       break;
     case 2:
-      frame = 2;
-      animation_stroboscope(10, 0, 150, 50); 
-      //animation_noise(20, 10);
+      animation_black_hole(10, 0, 150, 10, 0);
       animationContinue = true;
       break;
     case 3:
@@ -158,7 +154,40 @@ void changementMode(){
       animation_stroboscope(150, 20, 10, 50); 
       animationContinue = true;
       break;
+    case 13:
+      animation_rainbow(20, 1, 20); 
+      animationContinue = true;
+      break;
+    case 14:
+      animation_wave_horizontal(10, 0, 150, 50, 0); 
+      animationContinue = true;
+      break;
+    case 15:
+      animation_black_hole(10, 0, 150, 10, 1); 
+      animationContinue = true;
+      break;
 
+    case 135:
+      if (dataReady || animationContinue){
+        animation_black_hole(dataLora[0], dataLora[1], dataLora[2], dataLora[3], dataLora[4]);  
+        dataReady = false;
+        animationContinue = true; 
+      }
+      break;
+    case 136:
+      if (dataReady || animationContinue){
+        animation_wave_horizontal(dataLora[0], dataLora[1], dataLora[2], dataLora[3], dataLora[4]);  
+        dataReady = false;
+        animationContinue = true; 
+      }
+      break;
+    case 137:
+      if (dataReady || animationContinue){
+        animation_rainbow(dataLora[0], dataLora[1], dataLora[2]);  
+        dataReady = false;
+        animationContinue = true; 
+      }
+      break;
     case 138:
       if (dataReady || animationContinue){
         frame = dataLora[4];
@@ -374,7 +403,6 @@ bool extractPayload(uint8_t *payload, uint16_t sizePayload, uint8_t n) {
   dataReady = true;
   return true;
 }
-
 void OnRxDone(uint8_t *payload, uint16_t size, int16_t rssi, int8_t snr) {
   uint8_t IdRecu = 0;
   dataReady = false;
@@ -691,4 +719,78 @@ void animation_stroboscope(uint8_t R, uint8_t G, uint8_t B, uint8_t vitesse){
     delay(vitesse);
     if (frame != 255) frame--;
   }
+}
+void animation_rainbow(uint8_t vitesse, uint8_t sens, uint8_t intensite) {
+  strip.clear();
+  // Clamp au cas où
+  if (intensite > 255) intensite = 255;
+
+  for (uint8_t y = 0; y < HEIGHT; y++) {
+    for (uint8_t x = 0; x < WIDTH; x++) {
+      uint8_t hue = (x * 10 + y * 5 + frame) & 255;
+      // Couleur HSV -> RGB
+      uint32_t c = strip.gamma32(strip.ColorHSV(hue * 256));
+      // Extraction RGB
+      uint8_t r = (c >> 16) & 255;
+      uint8_t g = (c >> 8) & 255;
+      uint8_t b = c & 255;
+
+      // Application de l’intensité (0–255)
+      r = (r * intensite) >> 8;
+      g = (g * intensite) >> 8;
+      b = (b * intensite) >> 8;
+
+      setPixelColor(x, y, r, g, b);
+    }
+  }
+  strip.show();
+  // gestion du sens
+  frame += (sens == 0 ? 1 : -1);
+
+  delay(vitesse);
+}
+void animation_wave_horizontal(uint8_t R, uint8_t G, uint8_t B, uint8_t vitesse, uint8_t sens) {
+  strip.clear();
+
+  for (uint8_t y = 0; y < HEIGHT; y++) {
+    float intensity = (sin((y * 0.4) + frame * 0.12) + 1) * 0.5;
+    for (uint8_t x = 0; x < WIDTH; x++)
+      setPixelColor(x, y, R * intensity, G * intensity, B * intensity);
+  }
+
+  strip.show();
+  frame += (sens == 0 ? 1 : -1);
+  delay(vitesse);
+}
+void animation_black_hole(uint8_t R, uint8_t G, uint8_t B, uint8_t vitesse, uint8_t sens) {
+  strip.clear();
+
+  const float cx = WIDTH / 2.0;
+  const float cy = HEIGHT / 2.0;
+
+  for (uint8_t y = 0; y < HEIGHT; y++) {
+    for (uint8_t x = 0; x < WIDTH; x++) {
+
+      float dx = x - cx;
+      float dy = y - cy;
+      float dist = sqrt(dx*dx + dy*dy);
+
+      float influence = max(0.0, 1.0 - dist / (WIDTH * 0.7));
+
+      float angle = atan2(dy, dx);
+      angle += frame * 0.03 * influence;
+
+      float rFactor = sin(frame * 0.03 + dist * 0.5) * 0.5 + 0.5;
+
+      uint8_t r = R * influence * rFactor;
+      uint8_t g = G * influence * rFactor;
+      uint8_t b = B * influence * rFactor;
+
+      setPixelColor(x, y, r, g, b);
+    }
+  }
+
+  strip.show();
+  frame += (sens == 0 ? 1 : -1);
+  delay(vitesse);
 }
