@@ -66,7 +66,7 @@ void setup() {
 
   tempsBatterie = millis();     // initialise le temps
   tempsInactivitee = millis();  // initialise le temps
-  niveauBatterie = getPourcentageBatterie();
+  niveauBatterie = getBatteryLevel();
 }
 
 void setPixelColor(uint8_t x, uint8_t y, uint8_t R, uint8_t G, uint8_t B) {
@@ -80,7 +80,7 @@ void setPixelColor(uint8_t x, uint8_t y, uint8_t R, uint8_t G, uint8_t B) {
 uint32_t getPixelColor(uint8_t x, uint8_t y) {
   return strip.getPixelColor(CORRESPONDANCE_LED[y][x]);
 }
-uint8_t getPourcentageBatterie(){
+uint8_t getBatteryLevel(){
   float voltage = getBatteryVoltage();
   float niveauBatterie = 100.0 * (1 - exp(-0.0055 * (voltage - 3600))) /
                      (1 - exp(-0.0055 * (4230 - 3600)));            // calcul issue du max et min de batterie, 100% => 4240 et 0% => 3820
@@ -96,7 +96,7 @@ uint8_t getPourcentageBatterie(){
   return niveauBatterie;
 }
 
-void changementMode(){
+void modeChange(){
   if (modePrecedent != mode || dataReady) {          // détecte le changement de mode
     tempsInactivitee = millis();      
     modePrecedent = mode;
@@ -118,7 +118,7 @@ void changementMode(){
       animationContinue = true;
       break;
     case 4:
-      couleurStatic(0,25,0);
+      animationStaticColor(0,25,0);
       animationContinue = false;
       break;
     case 5:
@@ -126,7 +126,7 @@ void changementMode(){
       animationContinue = true;
       break;
     case 6:
-      animationScintillement(0, 20, 200, 90, 30);
+      animationSparkle(0, 20, 200, 90, 30);
       animationContinue = true;
       break;
     case 7:
@@ -138,11 +138,11 @@ void changementMode(){
       animationContinue = true;
       break;
     case 9:
-      defilement(100, 0, 50, 50, 3, 2); 
+      animationScrolling(100, 0, 50, 50, 3, 2); 
       animationContinue = true;
       break;
     case 10:
-      defilement(10, 100, 80, 20, 0, 5); 
+      animationScrolling(10, 100, 80, 20, 0, 5); 
       animationContinue = true;
       break;
     case 11:
@@ -159,7 +159,7 @@ void changementMode(){
       animationContinue = true;
       break;
     case 14:
-      animationWave(10, 0, 150, 50, 0); 
+      animationWaveNegativ(10, 0, 150, 50, 0); 
       animationContinue = true;
       break;
     case 15:
@@ -183,7 +183,7 @@ void changementMode(){
       break;
     case 136:
       if (dataReady || animationContinue){
-        animationWave(dataLora[0], dataLora[1], dataLora[2], dataLora[3], dataLora[4]);  
+        animationWaveNegativ(dataLora[0], dataLora[1], dataLora[2], dataLora[3], dataLora[4]);  
         dataReady = false;
         animationContinue = true; 
       }
@@ -234,7 +234,7 @@ void changementMode(){
       break;
     case 143:
       if (dataReady || animationContinue){
-        animationScintillement(dataLora[0], dataLora[1], dataLora[2], dataLora[3], dataLora[4]);   
+        animationSparkle(dataLora[0], dataLora[1], dataLora[2], dataLora[3], dataLora[4]);   
         dataReady = false;
         animationContinue = true;
       }
@@ -255,35 +255,35 @@ void changementMode(){
       break;
     case 146:
       if (dataReady || animationContinue){
-        animationVague(dataLora[0], dataLora[1], dataLora[2], dataLora[3], dataLora[4]);   
+        animationWavePositiv(dataLora[0], dataLora[1], dataLora[2], dataLora[3], dataLora[4]);   
         dataReady = false;
         animationContinue = true;
       }
       break;
     case 147:
       if (dataReady || animationContinue){
-        defilement(dataLora[0], dataLora[1], dataLora[2], dataLora[3], dataLora[4], dataLora[5]);   // défilement avec une couleur
+        animationScrolling(dataLora[0], dataLora[1], dataLora[2], dataLora[3], dataLora[4], dataLora[5]);   // défilement avec une couleur
         dataReady = false;
         animationContinue = true;
       }
       break;
     case 148:
       if (dataReady){
-        coloneCouleurStatic(dataLora[0], dataLora[1], dataLora[2], dataLora[3]);   // colone static avec une couleur
+        animationColumnStatic(dataLora[0], dataLora[1], dataLora[2], dataLora[3]);   // colone static avec une couleur
         dataReady = false;
         animationContinue = false;
       }
       break;
     case 149:
       if (dataReady){
-        ligneCouleurStatic(dataLora[0], dataLora[1], dataLora[2], dataLora[3]);   // ligne static avec une couleur
+        animationRowStatic(dataLora[0], dataLora[1], dataLora[2], dataLora[3]);   // ligne static avec une couleur
         dataReady = false;
         animationContinue = false;
       }
       break;
     case 150:
       if (dataReady){
-        couleurStatic(dataLora[0], dataLora[1], dataLora[2]);                      // uni avec une couleur static
+        animationStaticColor(dataLora[0], dataLora[1], dataLora[2]);                      // uni avec une couleur static
         dataReady = false;
         animationContinue = false;
       }
@@ -297,12 +297,12 @@ void changementMode(){
       }
       break;  
     case 152:       // mode pour l'affichage de la batterie faible
-      defilement(100, 0, 0, 200, 2, 3);
+      animationScrolling(100, 0, 0, 200, 2, 3);
       animationContinue = true;
       break;
     case 153:       // mode pour renvoyer le niveau de batterie
       static uint8_t niveauBatterieToSend = 0; 
-      niveauBatterieToSend = getPourcentageBatterie();
+      niveauBatterieToSend = getBatteryLevel();
       delay(100);
       Radio.Send(&niveauBatterieToSend, sizeof(niveauBatterieToSend));
       delay(20);
@@ -351,7 +351,7 @@ void boutonInterrupt() {
     else if (etatSortie == true){
       if (mode > 100) mode = 0;
       mode++;                           // Incrémente le mode
-      changementMode();
+      modeChange();
       if (DEBUG_BOUTON) Serial.printf("Mode : %d \n", mode);
     }
     strip.clear();
@@ -369,7 +369,7 @@ void loop() {
     
     if ((tempsCourant - tempsBatterie) > LIRE_NIVEAU * 1000) {      // lecture du niveau de batterie
       tempsBatterie = tempsCourant;
-      int niveauBatterie = getPourcentageBatterie();
+      int niveauBatterie = getBatteryLevel();
       if (niveauBatterie <= 8) {   // fait clignoter une led pour signaler le faible pourcentage
         mode = 152;
         animationContinue = true;
@@ -399,7 +399,7 @@ void loop() {
 
     Radio.IrqProcess();  // gestion des interruptions radio
     if (animationContinue){
-      changementMode();
+      modeChange();
     }
   }
 }
@@ -473,13 +473,13 @@ void OnRxDone(uint8_t *payload, uint16_t size, int16_t rssi, int8_t snr) {
     Serial.printf("RSSI: %d dBm, SNR: %d dB\n", rssi, snr);
     Serial.println("-------------------");
   }
-  if (dataReady) changementMode();
+  if (dataReady) modeChange();
 }
 
 void routineStop() {
   frame = 0;
   for (int k=0; k<25; ++k){
-    animationVague(200, 0, 30, 20, 1);
+    animationWavePositiv(200, 0, 30, 20, 1);
   }
   delay(30);
   Radio.Sleep();    // Stop la réception LoRa
@@ -491,7 +491,7 @@ void routineStart() {
   digitalWrite(PIN_EN, etatSortie); // allume le bandeau LED
   delay(200);
   for (int k=0; k<25; ++k){
-    animationVague(0, 20, 200, 20, 0);
+    animationWavePositiv(0, 20, 200, 20, 0);
   }
   delay(30);
   // Redémarre la réception LoRa
@@ -504,7 +504,7 @@ void routineStart() {
   Radio.Rx(0);  // 0 = réception continue
   delay(100);
 }
-void couleurStatic(uint8_t R, uint8_t G, uint8_t B){ // Affichage d'une couleur static
+void animationStaticColor(uint8_t R, uint8_t G, uint8_t B){ // Affichage d'une couleur static
   for (int x = 0; x < WIDTH; x++) {
     for (int y = 0; y < HEIGHT; y++) {
       setPixelColor(x, y, R, G, B); 
@@ -512,7 +512,7 @@ void couleurStatic(uint8_t R, uint8_t G, uint8_t B){ // Affichage d'une couleur 
   }
   strip.show();
 }
-void ligneCouleurStatic(uint8_t R, uint8_t G, uint8_t B, uint8_t numLigne){ // Affichage d'une ligne avec une couleur static
+void animationRowStatic(uint8_t R, uint8_t G, uint8_t B, uint8_t numLigne){ // Affichage d'une ligne avec une couleur static
   if (numLigne > HEIGHT) return;
   for (int x = 0; x < WIDTH; x++) {
     setPixelColor(x, numLigne, R, G, B); 
@@ -520,7 +520,7 @@ void ligneCouleurStatic(uint8_t R, uint8_t G, uint8_t B, uint8_t numLigne){ // A
   delay(15);
   strip.show();
 }
-void coloneCouleurStatic(uint8_t R, uint8_t G, uint8_t B, uint8_t numcolone){ // Affichage d'une colone avec une couleur static
+void animationColumnStatic(uint8_t R, uint8_t G, uint8_t B, uint8_t numcolone){ // Affichage d'une colone avec une couleur static
   if (numcolone > WIDTH) return;
   for (int y = 0; y < HEIGHT; y++) {
     setPixelColor(numcolone, y, R, G, B); 
@@ -528,7 +528,7 @@ void coloneCouleurStatic(uint8_t R, uint8_t G, uint8_t B, uint8_t numcolone){ //
   delay(15);
   strip.show();
 }
-void defilement(uint8_t R, uint8_t G, uint8_t B, uint8_t vitesse, uint8_t sens, uint8_t trainee) {
+void animationScrolling(uint8_t R, uint8_t G, uint8_t B, uint8_t vitesse, uint8_t sens, uint8_t trainee) {
   if (trainee > WIDTH) return;
   
   // ---  Atténue la couleur existante pour créer la traînée ---
@@ -553,25 +553,25 @@ void defilement(uint8_t R, uint8_t G, uint8_t B, uint8_t vitesse, uint8_t sens, 
   switch (sens) {
     case 0: { // Droite
       uint8_t x_actif = frame % 10;
-      coloneCouleurStatic(R, G, B, x_actif);
+      animationColumnStatic(R, G, B, x_actif);
       break;
     }
 
     case 1: { // Gauche
       uint8_t x_actif = (9 - (frame % 10));
-      coloneCouleurStatic(R, G, B, x_actif);
+      animationColumnStatic(R, G, B, x_actif);
       break;
     }
 
     case 2: { // Bas
       uint8_t y_actif = frame % 10;
-      ligneCouleurStatic(R, G, B, y_actif);
+      animationRowStatic(R, G, B, y_actif);
       break;
     }
 
     case 3: { // Haut
       uint8_t y_actif = (9 - (frame % 10));
-      ligneCouleurStatic(R, G, B, y_actif);
+      animationRowStatic(R, G, B, y_actif);
       break;
     }
 
@@ -587,7 +587,7 @@ void defilement(uint8_t R, uint8_t G, uint8_t B, uint8_t vitesse, uint8_t sens, 
   frame = (frame + 1) % 10;
   delay(vitesse);
 }
-void animationVague(uint8_t R, uint8_t G, uint8_t B, uint8_t vitesse, uint8_t sens) {
+void animationWavePositiv(uint8_t R, uint8_t G, uint8_t B, uint8_t vitesse, uint8_t sens) {
   if (sens != 0 && sens != 1) return;
 
   const int cx = WIDTH / 2;
@@ -666,7 +666,7 @@ void animationMatrix(uint8_t vitesse) {
   strip.show();
   delay(vitesse);
 }
-void animationScintillement(uint8_t R, uint8_t G, uint8_t B, uint8_t vitesse, uint8_t remplissage) {
+void animationSparkle(uint8_t R, uint8_t G, uint8_t B, uint8_t vitesse, uint8_t remplissage) {
   if (remplissage > 100) return;
   for(int i=1; i<NUM_LEDS; i++){
     if(random(0,100)<remplissage) strip.setPixelColor(i, R, G ,B);
@@ -717,7 +717,7 @@ void animationNoise(uint8_t vitesse, uint8_t intensite) {
 }
 void animationStroboscope(uint8_t R, uint8_t G, uint8_t B, uint8_t vitesse){
   if (frame > 0) {
-    couleurStatic(R, G, B);
+    animationStaticColor(R, G, B);
     strip.show();
     delay(vitesse);
     strip.clear();
@@ -754,7 +754,7 @@ void animationRainbow(uint8_t vitesse, uint8_t sens, uint8_t intensite) {
 
   delay(vitesse);
 }
-void animationWave(uint8_t R, uint8_t G, uint8_t B, uint8_t vitesse, uint8_t sens) {
+void animationWaveNegativ(uint8_t R, uint8_t G, uint8_t B, uint8_t vitesse, uint8_t sens) {
   if (sens != 0 && sens != 1) return;
   strip.clear();
 
