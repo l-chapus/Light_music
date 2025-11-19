@@ -457,8 +457,7 @@ void OnRxDone(uint8_t *payload, uint16_t size, int16_t rssi, int8_t snr) {
       Serial.println("ERREUR 255 : Paquet tronqué, données incomplètes ! ");
     } 
   }
-  
-   
+     
   // --- Affichage DEBUG ---
   if (DEBUG_RECEPTION) {
     Serial.print("Message reçu : ");
@@ -778,17 +777,13 @@ void animation_black_hole(uint8_t R, uint8_t G, uint8_t B, uint8_t vitesse, uint
 
   for (uint8_t y = 0; y < HEIGHT; y++) {
     for (uint8_t x = 0; x < WIDTH; x++) {
+      float dist = DISTANCE[y][x];        // Tableau précalculé
+      float influence = INFLUENCE[y][x];  // Tableau précalculé
+      float angle = ANGLE[y][x];          // Tableau précalculé
 
-      float dx = x - cx;
-      float dy = y - cy;
-      float dist = sqrt(dx*dx + dy*dy);
-
-      float influence = max(0.0, 1.0 - dist / (WIDTH * 0.7));
-
-      float angle = atan2(dy, dx);
       angle += frame * 0.03 * influence;
 
-      float rFactor = sin(frame * 0.03 + dist * 0.5) * 0.5 + 0.5;
+      float rFactor = sin(frame * 0.03 + DISTANCE[y][x] * 0.5) * 0.5 + 0.5;
 
       uint8_t r = R * influence * rFactor;
       uint8_t g = G * influence * rFactor;
