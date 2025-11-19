@@ -74,11 +74,11 @@ void setPixelColor(uint8_t x, uint8_t y, uint8_t R, uint8_t G, uint8_t B) {
     Serial.println("ERREUR 2 : Coordonnées en dehors du tableau !"); 
     return;
   }
-  strip.setPixelColor(correspondance_led[y][x], R, G, B);
-  //if (DEBUG_ANIMATION) Serial.printf("Coordonnée demandée x : %d , y : %d et numéro de la LED : %d \n",x ,y ,correspondance_led[y][x]);
+  strip.setPixelColor(CORRESPONDANCE_LED[y][x], R, G, B);
+  //if (DEBUG_ANIMATION) Serial.printf("Coordonnée demandée x : %d , y : %d et numéro de la LED : %d \n",x ,y ,CORRESPONDANCE_LED[y][x]);
 }
 uint32_t getPixelColor(uint8_t x, uint8_t y) {
-  return strip.getPixelColor(correspondance_led[y][x]);
+  return strip.getPixelColor(CORRESPONDANCE_LED[y][x]);
 }
 uint8_t getPourcentageBatterie(){
   float voltage = getBatteryVoltage();
@@ -106,35 +106,35 @@ void changementMode(){
     case 0: // utilisation en DEBUG uniquement
       break;
     case 1:
-      animation_black_hole(250, 0, 10, 20, 1);
+      animationBlackHole(250, 0, 10, 20, 1);
       animationContinue = true;
       break;
     case 2:
-      animation_black_hole(10, 0, 150, 10, 0);
+      animationBlackHole(10, 0, 150, 10, 0);
       animationContinue = true;
       break;
     case 3:
-      animation_explosion(150, 0, 10, 100);
+      animationExplosion(150, 0, 10, 100);
       animationContinue = true;
       break;
     case 4:
-      couleur_static(0,25,0);
+      couleurStatic(0,25,0);
       animationContinue = false;
       break;
     case 5:
-      animation_matrix(100); 
+      animationMatrix(100); 
       animationContinue = true;
       break;
     case 6:
-      animation_scintillement(0, 20, 200, 90, 30);
+      animationScintillement(0, 20, 200, 90, 30);
       animationContinue = true;
       break;
     case 7:
-      animation_gradient_flow(0, 20, 200, 10, 150, 0, 20); 
+      animationGradientFlow(0, 20, 200, 10, 150, 0, 20); 
       animationContinue = true;
       break;
     case 8: 
-      animation_breathing(0, 20, 200, 30); 
+      animationBreathing(0, 20, 200, 30); 
       animationContinue = true;
       break;
     case 9:
@@ -146,24 +146,24 @@ void changementMode(){
       animationContinue = true;
       break;
     case 11:
-      animation_noise(40, 6);
+      animationNoise(40, 6);
       animationContinue = true;
       break;
     case 12:
       frame = 150;
-      animation_stroboscope(150, 20, 10, 50); 
+      animationStroboscope(150, 20, 10, 50); 
       animationContinue = true;
       break;
     case 13:
-      animation_rainbow(20, 1, 20); 
+      animationRainbow(20, 1, 20); 
       animationContinue = true;
       break;
     case 14:
-      animation_wave_horizontal(10, 0, 150, 50, 0); 
+      animationWave(10, 0, 150, 50, 0); 
       animationContinue = true;
       break;
     case 15:
-      animation_black_hole(10, 0, 150, 10, 1); 
+      animationBlackHole(10, 0, 150, 10, 1); 
       animationContinue = true;
       break;
 
@@ -176,21 +176,21 @@ void changementMode(){
       break;
     case 135:
       if (dataReady || animationContinue){
-        animation_black_hole(dataLora[0], dataLora[1], dataLora[2], dataLora[3], dataLora[4]);  
+        animationBlackHole(dataLora[0], dataLora[1], dataLora[2], dataLora[3], dataLora[4]);  
         dataReady = false;
         animationContinue = true; 
       }
       break;
     case 136:
       if (dataReady || animationContinue){
-        animation_wave_horizontal(dataLora[0], dataLora[1], dataLora[2], dataLora[3], dataLora[4]);  
+        animationWave(dataLora[0], dataLora[1], dataLora[2], dataLora[3], dataLora[4]);  
         dataReady = false;
         animationContinue = true; 
       }
       break;
     case 137:
       if (dataReady || animationContinue){
-        animation_rainbow(dataLora[0], dataLora[1], dataLora[2]);  
+        animationRainbow(dataLora[0], dataLora[1], dataLora[2]);  
         dataReady = false;
         animationContinue = true; 
       }
@@ -201,61 +201,61 @@ void changementMode(){
         dataReady = false;
         animationContinue = true;
         mode = 139;
-        animation_stroboscope(dataLora[0], dataLora[1], dataLora[2], dataLora[3]);   
+        animationStroboscope(dataLora[0], dataLora[1], dataLora[2], dataLora[3]);   
       }
       break;
     case 139:
       if (animationContinue){     // appelé uniquement par le mode 138
-        animation_stroboscope(dataLora[0], dataLora[1], dataLora[2], dataLora[3]);   
+        animationStroboscope(dataLora[0], dataLora[1], dataLora[2], dataLora[3]);   
         dataReady = false;
         animationContinue = true;
       }
       break;
     case 140:
       if (dataReady || animationContinue){
-        animation_noise(dataLora[0], dataLora[1]);   
+        animationNoise(dataLora[0], dataLora[1]);   
         dataReady = false;
         animationContinue = true;
       }
       break;
     case 141:
       if (dataReady || animationContinue){
-        animation_breathing(dataLora[0], dataLora[1], dataLora[2], dataLora[3]);   
+        animationBreathing(dataLora[0], dataLora[1], dataLora[2], dataLora[3]);   
         dataReady = false;
         animationContinue = true;
       }
       break;
     case 142:
       if (dataReady || animationContinue){
-        animation_gradient_flow(dataLora[0], dataLora[1], dataLora[2], dataLora[3], dataLora[4], dataLora[5], dataLora[6]);   
+        animationGradientFlow(dataLora[0], dataLora[1], dataLora[2], dataLora[3], dataLora[4], dataLora[5], dataLora[6]);   
         dataReady = false;
         animationContinue = true;
       }
       break;
     case 143:
       if (dataReady || animationContinue){
-        animation_scintillement(dataLora[0], dataLora[1], dataLora[2], dataLora[3], dataLora[4]);   
+        animationScintillement(dataLora[0], dataLora[1], dataLora[2], dataLora[3], dataLora[4]);   
         dataReady = false;
         animationContinue = true;
       }
       break;
     case 144:
       if (dataReady || animationContinue){
-        animation_matrix(dataLora[0]);   
+        animationMatrix(dataLora[0]);   
         dataReady = false;
         animationContinue = true;
       }
       break;
     case 145:
       if (dataReady || animationContinue){
-        animation_explosion(dataLora[0], dataLora[1], dataLora[2], dataLora[3]);   
+        animationExplosion(dataLora[0], dataLora[1], dataLora[2], dataLora[3]);   
         dataReady = false;
         animationContinue = true;
       }
       break;
     case 146:
       if (dataReady || animationContinue){
-        animation_vague(dataLora[0], dataLora[1], dataLora[2], dataLora[3], dataLora[4]);   
+        animationVague(dataLora[0], dataLora[1], dataLora[2], dataLora[3], dataLora[4]);   
         dataReady = false;
         animationContinue = true;
       }
@@ -269,21 +269,21 @@ void changementMode(){
       break;
     case 148:
       if (dataReady){
-        colone_couleur_static(dataLora[0], dataLora[1], dataLora[2], dataLora[3]);   // colone static avec une couleur
+        coloneCouleurStatic(dataLora[0], dataLora[1], dataLora[2], dataLora[3]);   // colone static avec une couleur
         dataReady = false;
         animationContinue = false;
       }
       break;
     case 149:
       if (dataReady){
-        ligne_couleur_static(dataLora[0], dataLora[1], dataLora[2], dataLora[3]);   // ligne static avec une couleur
+        ligneCouleurStatic(dataLora[0], dataLora[1], dataLora[2], dataLora[3]);   // ligne static avec une couleur
         dataReady = false;
         animationContinue = false;
       }
       break;
     case 150:
       if (dataReady){
-        couleur_static(dataLora[0], dataLora[1], dataLora[2]);                      // uni avec une couleur static
+        couleurStatic(dataLora[0], dataLora[1], dataLora[2]);                      // uni avec une couleur static
         dataReady = false;
         animationContinue = false;
       }
@@ -479,7 +479,7 @@ void OnRxDone(uint8_t *payload, uint16_t size, int16_t rssi, int8_t snr) {
 void routineStop() {
   frame = 0;
   for (int k=0; k<25; ++k){
-    animation_vague(200, 0, 30, 20, 1);
+    animationVague(200, 0, 30, 20, 1);
   }
   delay(30);
   Radio.Sleep();    // Stop la réception LoRa
@@ -491,7 +491,7 @@ void routineStart() {
   digitalWrite(PIN_EN, etatSortie); // allume le bandeau LED
   delay(200);
   for (int k=0; k<25; ++k){
-    animation_vague(0, 20, 200, 20, 0);
+    animationVague(0, 20, 200, 20, 0);
   }
   delay(30);
   // Redémarre la réception LoRa
@@ -504,7 +504,7 @@ void routineStart() {
   Radio.Rx(0);  // 0 = réception continue
   delay(100);
 }
-void couleur_static(uint8_t R, uint8_t G, uint8_t B){ // Affichage d'une couleur static
+void couleurStatic(uint8_t R, uint8_t G, uint8_t B){ // Affichage d'une couleur static
   for (int x = 0; x < WIDTH; x++) {
     for (int y = 0; y < HEIGHT; y++) {
       setPixelColor(x, y, R, G, B); 
@@ -512,7 +512,7 @@ void couleur_static(uint8_t R, uint8_t G, uint8_t B){ // Affichage d'une couleur
   }
   strip.show();
 }
-void ligne_couleur_static(uint8_t R, uint8_t G, uint8_t B, uint8_t numLigne){ // Affichage d'une ligne avec une couleur static
+void ligneCouleurStatic(uint8_t R, uint8_t G, uint8_t B, uint8_t numLigne){ // Affichage d'une ligne avec une couleur static
   if (numLigne > HEIGHT) return;
   for (int x = 0; x < WIDTH; x++) {
     setPixelColor(x, numLigne, R, G, B); 
@@ -520,7 +520,7 @@ void ligne_couleur_static(uint8_t R, uint8_t G, uint8_t B, uint8_t numLigne){ //
   delay(15);
   strip.show();
 }
-void colone_couleur_static(uint8_t R, uint8_t G, uint8_t B, uint8_t numcolone){ // Affichage d'une colone avec une couleur static
+void coloneCouleurStatic(uint8_t R, uint8_t G, uint8_t B, uint8_t numcolone){ // Affichage d'une colone avec une couleur static
   if (numcolone > WIDTH) return;
   for (int y = 0; y < HEIGHT; y++) {
     setPixelColor(numcolone, y, R, G, B); 
@@ -553,25 +553,25 @@ void defilement(uint8_t R, uint8_t G, uint8_t B, uint8_t vitesse, uint8_t sens, 
   switch (sens) {
     case 0: { // Droite
       uint8_t x_actif = frame % 10;
-      colone_couleur_static(R, G, B, x_actif);
+      coloneCouleurStatic(R, G, B, x_actif);
       break;
     }
 
     case 1: { // Gauche
       uint8_t x_actif = (9 - (frame % 10));
-      colone_couleur_static(R, G, B, x_actif);
+      coloneCouleurStatic(R, G, B, x_actif);
       break;
     }
 
     case 2: { // Bas
       uint8_t y_actif = frame % 10;
-      ligne_couleur_static(R, G, B, y_actif);
+      ligneCouleurStatic(R, G, B, y_actif);
       break;
     }
 
     case 3: { // Haut
       uint8_t y_actif = (9 - (frame % 10));
-      ligne_couleur_static(R, G, B, y_actif);
+      ligneCouleurStatic(R, G, B, y_actif);
       break;
     }
 
@@ -587,7 +587,7 @@ void defilement(uint8_t R, uint8_t G, uint8_t B, uint8_t vitesse, uint8_t sens, 
   frame = (frame + 1) % 10;
   delay(vitesse);
 }
-void animation_vague(uint8_t R, uint8_t G, uint8_t B, uint8_t vitesse, uint8_t sens) {
+void animationVague(uint8_t R, uint8_t G, uint8_t B, uint8_t vitesse, uint8_t sens) {
   if (sens != 0 && sens != 1) return;
 
   const int cx = WIDTH / 2;
@@ -621,7 +621,7 @@ void animation_vague(uint8_t R, uint8_t G, uint8_t B, uint8_t vitesse, uint8_t s
   }
   delay(vitesse);
 }
-void animation_explosion(uint8_t R, uint8_t G, uint8_t B, uint8_t vitesse) {
+void animationExplosion(uint8_t R, uint8_t G, uint8_t B, uint8_t vitesse) {
   const int cx = WIDTH / 2;
   const int cy = HEIGHT / 2;
 
@@ -639,7 +639,7 @@ void animation_explosion(uint8_t R, uint8_t G, uint8_t B, uint8_t vitesse) {
     delay(vitesse);
   }
 }
-void animation_matrix(uint8_t vitesse) {
+void animationMatrix(uint8_t vitesse) {
   static int drops[10] = {0};
 
   // Fait descendre chaque colonne
@@ -666,7 +666,7 @@ void animation_matrix(uint8_t vitesse) {
   strip.show();
   delay(vitesse);
 }
-void animation_scintillement(uint8_t R, uint8_t G, uint8_t B, uint8_t vitesse, uint8_t remplissage) {
+void animationScintillement(uint8_t R, uint8_t G, uint8_t B, uint8_t vitesse, uint8_t remplissage) {
   if (remplissage > 100) return;
   for(int i=1; i<NUM_LEDS; i++){
     if(random(0,100)<remplissage) strip.setPixelColor(i, R, G ,B);
@@ -675,7 +675,7 @@ void animation_scintillement(uint8_t R, uint8_t G, uint8_t B, uint8_t vitesse, u
   strip.show();
   delay(vitesse);
 }
-void animation_gradient_flow(uint8_t R_1, uint8_t G_1, uint8_t B_1, uint8_t R_2, uint8_t G_2, uint8_t B_2, uint8_t vitesse) {
+void animationGradientFlow(uint8_t R_1, uint8_t G_1, uint8_t B_1, uint8_t R_2, uint8_t G_2, uint8_t B_2, uint8_t vitesse) {
   for (uint8_t y = 0; y < HEIGHT; y++) {
     for (uint8_t x = 0; x < WIDTH; x++) {
       float t = (sin((x + frame) * 0.2) + 1) / 2.0;
@@ -689,7 +689,7 @@ void animation_gradient_flow(uint8_t R_1, uint8_t G_1, uint8_t B_1, uint8_t R_2,
   frame++;
   delay(vitesse);
 }
-void animation_breathing(uint8_t R, uint8_t G, uint8_t B, uint8_t vitesse) {
+void animationBreathing(uint8_t R, uint8_t G, uint8_t B, uint8_t vitesse) {
   float intensity = (sin(frame * 0.05) + 1.0) / 2.0;
 
   for (uint8_t y = 0; y < HEIGHT; y++) {
@@ -702,7 +702,7 @@ void animation_breathing(uint8_t R, uint8_t G, uint8_t B, uint8_t vitesse) {
   frame++;
   delay(vitesse);
 }
-void animation_noise(uint8_t vitesse, uint8_t intensite) {
+void animationNoise(uint8_t vitesse, uint8_t intensite) {
   if (intensite > 10) return;
   for (uint8_t y = 0; y < HEIGHT; y++) {
     for (uint8_t x = 0; x < WIDTH; x++) {
@@ -715,9 +715,9 @@ void animation_noise(uint8_t vitesse, uint8_t intensite) {
   strip.show();
   delay(vitesse);
 }
-void animation_stroboscope(uint8_t R, uint8_t G, uint8_t B, uint8_t vitesse){
+void animationStroboscope(uint8_t R, uint8_t G, uint8_t B, uint8_t vitesse){
   if (frame > 0) {
-    couleur_static(R, G, B);
+    couleurStatic(R, G, B);
     strip.show();
     delay(vitesse);
     strip.clear();
@@ -726,7 +726,7 @@ void animation_stroboscope(uint8_t R, uint8_t G, uint8_t B, uint8_t vitesse){
     if (frame != 255) frame--;
   }
 }
-void animation_rainbow(uint8_t vitesse, uint8_t sens, uint8_t intensite) {
+void animationRainbow(uint8_t vitesse, uint8_t sens, uint8_t intensite) {
   strip.clear();
   if (intensite > 255) intensite = 255;
 
@@ -754,7 +754,7 @@ void animation_rainbow(uint8_t vitesse, uint8_t sens, uint8_t intensite) {
 
   delay(vitesse);
 }
-void animation_wave_horizontal(uint8_t R, uint8_t G, uint8_t B, uint8_t vitesse, uint8_t sens) {
+void animationWave(uint8_t R, uint8_t G, uint8_t B, uint8_t vitesse, uint8_t sens) {
   if (sens != 0 && sens != 1) return;
   strip.clear();
 
@@ -768,7 +768,7 @@ void animation_wave_horizontal(uint8_t R, uint8_t G, uint8_t B, uint8_t vitesse,
   frame += (sens == 0 ? 1 : -1);
   delay(vitesse);
 }
-void animation_black_hole(uint8_t R, uint8_t G, uint8_t B, uint8_t vitesse, uint8_t sens) {
+void animationBlackHole(uint8_t R, uint8_t G, uint8_t B, uint8_t vitesse, uint8_t sens) {
   if (sens != 0 && sens != 1) return;
   strip.clear();
 

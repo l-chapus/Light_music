@@ -30,7 +30,7 @@
 
 const uint8_t FFT_SIZE = 16; // Taille de la FFT
 
-const uint8_t correspondance_led[10][10] = {
+const uint8_t CORRESPONDANCE_LED[10][10] = {
   {100, 81, 80, 61, 60, 41, 40, 21, 20, 1},
   {99, 82, 79, 62, 59, 42, 39, 22, 19, 2},
   {98, 83, 78, 63, 58, 43, 38, 23, 18, 3},
