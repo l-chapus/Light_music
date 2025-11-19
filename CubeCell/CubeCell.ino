@@ -167,6 +167,13 @@ void changementMode(){
       animationContinue = true;
       break;
 
+    case 134:
+      if (dataReady){
+        setPixelColor(dataLora[0], dataLora[1], dataLora[2], dataLora[3], dataLora[4]);  
+        dataReady = false;
+        animationContinue = false; 
+      }
+      break;
     case 135:
       if (dataReady || animationContinue){
         animation_black_hole(dataLora[0], dataLora[1], dataLora[2], dataLora[3], dataLora[4]);  
@@ -435,7 +442,7 @@ void OnRxDone(uint8_t *payload, uint16_t size, int16_t rssi, int8_t snr) {
       Serial.println("ERREUR 255 : Paquet tronqué, données incomplètes ! ");
     } 
   }
-  if (mode == 146 || mode == 143 || mode == 138){ // extraction de 5 variables
+  if (mode == 146 || mode == 143 || mode == 138 || mode == 134){ // extraction de 5 variables
     if (!extractPayload(payload, size, 5)) {
       Serial.println("ERREUR 255 : Paquet tronqué, données incomplètes ! ");
     } 
@@ -722,7 +729,6 @@ void animation_stroboscope(uint8_t R, uint8_t G, uint8_t B, uint8_t vitesse){
 }
 void animation_rainbow(uint8_t vitesse, uint8_t sens, uint8_t intensite) {
   strip.clear();
-  // Clamp au cas où
   if (intensite > 255) intensite = 255;
 
   for (uint8_t y = 0; y < HEIGHT; y++) {
@@ -750,6 +756,7 @@ void animation_rainbow(uint8_t vitesse, uint8_t sens, uint8_t intensite) {
   delay(vitesse);
 }
 void animation_wave_horizontal(uint8_t R, uint8_t G, uint8_t B, uint8_t vitesse, uint8_t sens) {
+  if (sens != 0 && sens != 1) return;
   strip.clear();
 
   for (uint8_t y = 0; y < HEIGHT; y++) {
@@ -763,6 +770,7 @@ void animation_wave_horizontal(uint8_t R, uint8_t G, uint8_t B, uint8_t vitesse,
   delay(vitesse);
 }
 void animation_black_hole(uint8_t R, uint8_t G, uint8_t B, uint8_t vitesse, uint8_t sens) {
+  if (sens != 0 && sens != 1) return;
   strip.clear();
 
   const float cx = WIDTH / 2.0;
