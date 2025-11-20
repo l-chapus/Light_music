@@ -109,7 +109,7 @@ void modeChange(){
   }
   
   switch (mode) {
-    case 0: // utilisation en DEBUG uniquement
+    case 0: // mode par défaut
       break;
     case 1:
       animationBattery(100, niveauBatterieGlobal);
@@ -345,36 +345,36 @@ void modeChange(){
 
 // === Fonction appelée lors de l’interruption ===
 void boutonInterrupt() {
+  if (DEBUG_BOUTON) {
+    Serial.println("-----------------------");
+    Serial.print("Etat bouton : ");Serial.println(digitalRead(PIN_BOUTON) );
+    Serial.print("temps appui: ");Serial.println(millis() - tempsAppui);
+  }
+
   if (digitalRead(PIN_BOUTON) == LOW) {
-    tempsAppui = millis();                // Sauvegarde le temps où le bouton a été appuyé
+    tempsAppui = millis() ;                // Sauvegarde le temps où le bouton a été appuyé
   }
   else {
-    if (millis() - tempsAppui > TEMPO_SLEEP){
+    unsigned long int duration = millis() - tempsAppui;
+    if (duration > TEMPO_SLEEP && duration < 5000){
       etatSortie = !etatSortie;
-      if (!etatSortie) {
-        animationStaticColor(0, 200, 0);
-        delay(400);
-        routineStop();
-      }
+      if (!etatSortie) routineStop();
+
       if (etatSortie) routineStart();
 
       mode = 0;
-
-      if (DEBUG_BOUTON) Serial.println("ON/OFF");
     }
     else if (etatSortie == true){
       if (mode > 100) mode = 0;
       mode++;                           // Incrémente le mode
-      modeChange();
       if (DEBUG_BOUTON) Serial.printf("Mode : %d \n", mode);
+      modeChange();
     }
     strip.clear();
     strip.show();
   }
 }
-
 void loop() {  
-
   if (!etatSortie) {      // Carte en veille
     lowPowerHandler();    // met en veille profond la carte = 0.24 mA
   }
@@ -493,16 +493,19 @@ void OnRxDone(uint8_t *payload, uint16_t size, int16_t rssi, int8_t snr) {
 }
 
 void routineStop() {
+  if (DEBUG_BOUTON) Serial.println("OFF");
   frame = 0;
-  for (int k=0; k<25; ++k){
+  delay(20);
+  for (int k=0; k<35; ++k){
     animationWavePositiv(200, 0, 30, 20, 1);
   }
   delay(30);
   Radio.Sleep();    // Stop la réception LoRa
-  delay(100);
+  delay(200);
   digitalWrite(PIN_EN, etatSortie); // éteint le bandeau LED
 }
 void routineStart() {
+  if (DEBUG_BOUTON) Serial.println("ON");
   frame = 0;
   digitalWrite(PIN_EN, etatSortie); // allume le bandeau LED
   delay(200);
