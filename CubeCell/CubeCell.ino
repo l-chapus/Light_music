@@ -1,3 +1,5 @@
+// Version 1.0, handmade by Louka CHAPUS
+
 #include "LoRaWan_APP.h"
 #include "Arduino.h"
 #include "CubeCell_NeoPixel.h"
