@@ -48,7 +48,7 @@ const uint8_t CORRESPONDANCE_LED[10][10] = {
 #define EEPROM_ADDR_ID 0     // adresse de stockage de ton ID
 
 // --- Batterie ---
-const uint8_t LIRE_NIVEAU = 40; // Temps entre 2 lectures du niveau de batterie (temps en secondes)
+const uint8_t LIRE_NIVEAU = 120; // Temps entre 2 lectures du niveau de batterie (temps en secondes)
 const uint8_t TEMPS_INACTIVITEE = 5; // Temps après arrêt automatique (temps en minutes)
 
 

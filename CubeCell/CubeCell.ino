@@ -24,7 +24,7 @@ bool animationContinue = false;
 uint32_t tempsBatterie = 0;      // Temps pour la lecture de la batterie
 uint32_t tempsInactivitee = 0;   // Temps pour l'inactivitée
 uint32_t tempsCourant = 0;      // Temps pour la lecture de la batterie
-uint8_t niveauBatterie = 0;
+uint8_t niveauBatterieGlobal = 0;
 
 void setup() {
   pinMode(PIN_BOUTON, INPUT_PULLUP); // Bouton
@@ -66,7 +66,8 @@ void setup() {
 
   tempsBatterie = millis();     // initialise le temps
   tempsInactivitee = millis();  // initialise le temps
-  niveauBatterie = getBatteryLevel();
+  niveauBatterieGlobal = getBatteryLevel();
+  delay(40);
 }
 
 void setPixelColor(uint8_t x, uint8_t y, uint8_t R, uint8_t G, uint8_t B) {
@@ -81,19 +82,24 @@ uint32_t getPixelColor(uint8_t x, uint8_t y) {
   return strip.getPixelColor(CORRESPONDANCE_LED[y][x]);
 }
 uint8_t getBatteryLevel(){
+  strip.setBrightness(8);
+  strip.show();
+  delay(10);
+
   float voltage = getBatteryVoltage();
-  float niveauBatterie = 100.0 * (1 - exp(-0.0055 * (voltage - 3600))) /
-                     (1 - exp(-0.0055 * (4230 - 3600)));            // calcul issue du max et min de batterie, 100% => 4240 et 0% => 3820
-  niveauBatterie = constrain(niveauBatterie, 0, 100);
- 
+  niveauBatterieGlobal = map(BoardGetBatteryLevel(), 1, 254, 0, 100);
+
+  strip.setBrightness(100);
+  strip.show();
+
   if (DEBUG_BATTERIE) {
     Serial.printf("Tension batterie : %.2f V\n", voltage);
-    Serial.printf("Niveau calculé de la batterie : %.2f %\n", niveauBatterie);
+    Serial.printf("Niveau calculé de la batterie : %d %\n", niveauBatterieGlobal);
     Serial.printf("Temps courant : %d \n", tempsCourant);
     Serial.println("--------------"); 
   }
 
-  return niveauBatterie;
+  return niveauBatterieGlobal;
 }
 
 void modeChange(){
@@ -106,7 +112,8 @@ void modeChange(){
     case 0: // utilisation en DEBUG uniquement
       break;
     case 1:
-      animationBlackHole(250, 0, 10, 20, 1);
+      animationBattery(100, niveauBatterieGlobal);
+      modePrecedent = 0;
       animationContinue = true;
       break;
     case 2:
@@ -301,11 +308,11 @@ void modeChange(){
       animationContinue = true;
       break;
     case 153:       // mode pour renvoyer le niveau de batterie
-      static uint8_t niveauBatterieToSend = 0; 
-      niveauBatterieToSend = getBatteryLevel();
+      //niveauBatterieGlobal = getBatteryLevel();
+      delay(50);
+      Radio.Send(&niveauBatterieGlobal, sizeof(niveauBatterieGlobal));
       delay(100);
-      Radio.Send(&niveauBatterieToSend, sizeof(niveauBatterieToSend));
-      delay(20);
+      Radio.Rx(0);  // 0 = réception continue
       mode = 0;
       animationContinue = false;
       break;
@@ -313,6 +320,10 @@ void modeChange(){
       mode = 0;
       animationContinue = false;
       routineStop();
+      break;
+    case 155:       // Affiche le niveau de batterie sur les LEDs
+      animationBattery(20, niveauBatterieGlobal);
+      animationContinue = true;
       break;
     case 200:
       if (dataReady){
@@ -340,8 +351,11 @@ void boutonInterrupt() {
   else {
     if (millis() - tempsAppui > TEMPO_SLEEP){
       etatSortie = !etatSortie;
-      if (!etatSortie) routineStop();
-      //digitalWrite(PIN_EN, etatSortie); // allume ou éteint le bandeau LED
+      if (!etatSortie) {
+        animationStaticColor(0, 200, 0);
+        delay(400);
+        routineStop();
+      }
       if (etatSortie) routineStart();
 
       mode = 0;
@@ -369,13 +383,15 @@ void loop() {
     
     if ((tempsCourant - tempsBatterie) > LIRE_NIVEAU * 1000) {      // lecture du niveau de batterie
       tempsBatterie = tempsCourant;
-      int niveauBatterie = getBatteryLevel();
-      if (niveauBatterie <= 8) {   // fait clignoter une led pour signaler le faible pourcentage
+      niveauBatterieGlobal = getBatteryLevel();
+      if (niveauBatterieGlobal <= 8) {   // fait clignoter une led pour signaler le faible pourcentage
         mode = 152;
         animationContinue = true;
       }
-      if (niveauBatterie <= 2) {   // eteind de force la carte pour préservé la batterie restante
+      if (niveauBatterieGlobal <= 2) {   // eteind de force la carte pour préservé la batterie restante
         etatSortie = false;
+        animationStaticColor(200, 0, 0);
+        delay(2000);
         routineStop();
       }
     }
@@ -795,5 +811,48 @@ void animationBlackHole(uint8_t R, uint8_t G, uint8_t B, uint8_t vitesse, uint8_
 
   strip.show();
   frame += (sens == 0 ? 1 : -1);
+  delay(vitesse);
+}
+void getColorForPercent(float p, uint8_t &r, uint8_t &g, uint8_t &b) {
+    r = constrain(255 - (p * 2.55), 0, 255);
+    g = constrain(p * 2.55, 0, 255);
+    b = 25;
+}
+void animationBattery(uint8_t vitesse, uint8_t batteryPercent) {
+  strip.clear();
+
+  // Hauteur remplie selon le niveau réel
+  uint8_t filledHeight = map(batteryPercent, 0, 100, 0, HEIGHT);
+
+  // Animation du gradient montant : "offset" animé
+  float gradientOffset = frame * 0.15;  
+
+  for (uint8_t y = 0; y < HEIGHT; y++) {
+    for (uint8_t x = 0; x < WIDTH; x++) {
+
+      if (y >= HEIGHT - filledHeight) {
+        // --- 🟩 Partie déjà chargée (stable) ---
+        float levelPercent = (float)(HEIGHT - y) / HEIGHT * 100.0;
+        uint8_t r, g, b;
+        getColorForPercent(levelPercent, r, g, b);
+        setPixelColor(x, y, r, g, b);
+      } else {
+        // --- 🔄 Partie en cours de charge (gradient animé vers le haut) ---
+        float val = (float)(HEIGHT - y) / HEIGHT * 8.0 + gradientOffset;
+
+        // Création d’un gradient doux basé sinus
+        float intensity = (sin(val) + 1.0) / 2.0;
+
+        uint8_t r = 30 * intensity;
+        uint8_t g = 120 * intensity;
+        uint8_t b = 255 * intensity;
+
+        setPixelColor(x, y, r, g, b);
+      }
+    }
+  }
+
+  strip.show();
+  frame++;
   delay(vitesse);
 }

@@ -108,7 +108,7 @@ uint8_t get_battery_level(uint8_t ID) {
   while(millis() - start < 2000) {
     int packetSize = LoRa.parsePacket();
     if (packetSize) {
-      uint8_t level = LoRa.read();
+      level = LoRa.read();
       Serial.print("Niveau de batterie reçu: ");
       Serial.print(level);
       Serial.println("%");
@@ -120,12 +120,12 @@ uint8_t get_battery_level(uint8_t ID) {
 }
 
 void fonction_test() {
-  //get_battery_level(1);
-  //delay(1000);
+  get_battery_level(1);
+  delay(1000);
 
   // Fonction vide pour test
   uint8_t ID = 1;
-  uint8_t mode = 139;
+  uint8_t mode = 138;
   uint8_t R = 80;
   uint8_t G = 10;
   uint8_t B = 150;
