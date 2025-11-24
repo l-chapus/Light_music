@@ -95,11 +95,14 @@ void setup() {
   display.display();
 }
 
-uint8_t get_battery_level(uint8_t ID) {
-  uint8_t mode = 153;
+uint8_t get_battery_level(uint8_t ID, bool resetMode) {
+  uint8_t mode = 204;
+  uint8_t nbArgument = 0;
+  if (resetMode) mode = 203; // Mode reset
   LoRa.beginPacket();
-  LoRa.write((uint8_t*)&ID, sizeof(bouton_compteur)); // Envoie l'entier sur 2 octets
-  LoRa.write((uint8_t*)&mode, sizeof(bouton_compteur)); // Envoie l'entier sur 2 octets
+  LoRa.write((uint8_t*)&ID, sizeof(ID)); // Envoie l'entier sur 2 octets
+  LoRa.write((uint8_t*)&mode, sizeof(mode)); // Envoie l'entier sur 2 octets
+  LoRa.write((uint8_t*)&nbArgument, sizeof(nbArgument)); // Envoie l'entier sur 2 octets
   LoRa.endPacket();
 
   long int start = millis();
@@ -120,7 +123,7 @@ uint8_t get_battery_level(uint8_t ID) {
 }
 
 void fonction_test() {
-  get_battery_level(1);
+  get_battery_level(1, true);
   delay(1000);
 
   // Fonction vide pour test
