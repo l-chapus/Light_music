@@ -1,4 +1,4 @@
-// Version 1.0, handmade by Louka CHAPUS
+// Version 2.1, handmade by Louka CHAPUS
 
 #include "LoRaWan_APP.h"
 #include "Arduino.h"
@@ -176,157 +176,135 @@ void modeChange(){
       animationContinue = true;
       break;
 
-    case 134:
-      if (dataReady){
-        setPixelColor(dataLora[0], dataLora[1], dataLora[2], dataLora[3], dataLora[4]);  
-        dataReady = false;
-        animationContinue = false; 
-      }
-      break;
-    case 135:
-      if (dataReady || animationContinue){
-        animationBlackHole(dataLora[0], dataLora[1], dataLora[2], dataLora[3], dataLora[4]);  
-        dataReady = false;
-        animationContinue = true; 
-      }
-      break;
-    case 136:
-      if (dataReady || animationContinue){
-        animationWaveNegativ(dataLora[0], dataLora[1], dataLora[2], dataLora[3], dataLora[4]);  
-        dataReady = false;
-        animationContinue = true; 
-      }
-      break;
-    case 137:
-      if (dataReady || animationContinue){
-        animationRainbow(dataLora[0], dataLora[1], dataLora[2]);  
-        dataReady = false;
-        animationContinue = true; 
-      }
-      break;
-    case 138:
-      if (dataReady || animationContinue){
-        frame = dataLora[4];
-        dataReady = false;
-        animationContinue = true;
-        mode = 139;
-        animationStroboscope(dataLora[0], dataLora[1], dataLora[2], dataLora[3]);   
-      }
-      break;
-    case 139:
-      if (animationContinue){     // appelé uniquement par le mode 138
-        animationStroboscope(dataLora[0], dataLora[1], dataLora[2], dataLora[3]);   
-        dataReady = false;
-        animationContinue = true;
-      }
-      break;
-    case 140:
-      if (dataReady || animationContinue){
-        animationNoise(dataLora[0], dataLora[1]);   
-        dataReady = false;
-        animationContinue = true;
-      }
-      break;
-    case 141:
-      if (dataReady || animationContinue){
-        animationBreathing(dataLora[0], dataLora[1], dataLora[2], dataLora[3]);   
-        dataReady = false;
-        animationContinue = true;
-      }
-      break;
-    case 142:
-      if (dataReady || animationContinue){
-        animationGradientFlow(dataLora[0], dataLora[1], dataLora[2], dataLora[3], dataLora[4], dataLora[5], dataLora[6]);   
-        dataReady = false;
-        animationContinue = true;
-      }
-      break;
-    case 143:
-      if (dataReady || animationContinue){
-        animationSparkle(dataLora[0], dataLora[1], dataLora[2], dataLora[3], dataLora[4]);   
-        dataReady = false;
-        animationContinue = true;
-      }
-      break;
-    case 144:
-      if (dataReady || animationContinue){
-        animationMatrix(dataLora[0]);   
-        dataReady = false;
-        animationContinue = true;
-      }
-      break;
-    case 145:
-      if (dataReady || animationContinue){
-        animationExplosion(dataLora[0], dataLora[1], dataLora[2], dataLora[3]);   
-        dataReady = false;
-        animationContinue = true;
-      }
-      break;
-    case 146:
-      if (dataReady || animationContinue){
-        animationWavePositiv(dataLora[0], dataLora[1], dataLora[2], dataLora[3], dataLora[4]);   
-        dataReady = false;
-        animationContinue = true;
-      }
-      break;
-    case 147:
-      if (dataReady || animationContinue){
-        animationScrolling(dataLora[0], dataLora[1], dataLora[2], dataLora[3], dataLora[4], dataLora[5]);   // défilement avec une couleur
-        dataReady = false;
-        animationContinue = true;
-      }
-      break;
-    case 148:
-      if (dataReady){
-        animationColumnStatic(dataLora[0], dataLora[1], dataLora[2], dataLora[3]);   // colone static avec une couleur
-        dataReady = false;
-        animationContinue = false;
-      }
-      break;
-    case 149:
-      if (dataReady){
-        animationRowStatic(dataLora[0], dataLora[1], dataLora[2], dataLora[3]);   // ligne static avec une couleur
-        dataReady = false;
-        animationContinue = false;
-      }
-      break;
-    case 150:
-      if (dataReady){
-        animationStaticColor(dataLora[0], dataLora[1], dataLora[2]);                      // uni avec une couleur static
-        dataReady = false;
-        animationContinue = false;
-      }
-      break;
-    case 151:
+    case 100:
       if (dataReady){
         strip.clear(); 
         strip.show();
         dataReady = false;
         animationContinue = false;
       }
-      break;  
-    case 152:       // mode pour l'affichage de la batterie faible
-      animationScrolling(100, 0, 0, 200, 2, 3);
-      animationContinue = true;
+      break; 
+    case 101:
+      if (dataReady){
+        setPixelColor(dataLora[0], dataLora[1], dataLora[2], dataLora[3], dataLora[4]);  
+        dataReady = false;
+        animationContinue = false; 
+      }
       break;
-    case 153:       // mode pour renvoyer le niveau de batterie
-      //niveauBatterieGlobal = getBatteryLevel();
-      delay(50);
-      Radio.Send(&niveauBatterieGlobal, sizeof(niveauBatterieGlobal));
-      delay(100);
-      Radio.Rx(0);  // 0 = réception continue
-      mode = 0;
-      animationContinue = false;
+    case 102:
+      if (dataReady){
+        animationColumnStatic(dataLora[0], dataLora[1], dataLora[2], dataLora[3]);   // colone static avec une couleur
+        dataReady = false;
+        animationContinue = false;
+      }
       break;
-    case 154:
-      mode = 0;
-      animationContinue = false;
-      routineStop();
+    case 103:
+      if (dataReady){
+        animationRowStatic(dataLora[0], dataLora[1], dataLora[2], dataLora[3]);   // ligne static avec une couleur
+        dataReady = false;
+        animationContinue = false;
+      }
       break;
-    case 155:       // Affiche le niveau de batterie sur les LEDs
-      animationBattery(20, niveauBatterieGlobal);
-      animationContinue = true;
+    case 104:
+      if (dataReady){
+        animationStaticColor(dataLora[0], dataLora[1], dataLora[2]);                      // uni avec une couleur static
+        dataReady = false;
+        animationContinue = false;
+      }
       break;
+    case 105:
+      if (dataReady || animationContinue){
+        animationBlackHole(dataLora[0], dataLora[1], dataLora[2], dataLora[3], dataLora[4]);  
+        dataReady = false;
+        animationContinue = true; 
+      }
+      break;
+    case 106:
+      if (dataReady || animationContinue){
+        animationWaveNegativ(dataLora[0], dataLora[1], dataLora[2], dataLora[3], dataLora[4]);  
+        dataReady = false;
+        animationContinue = true; 
+      }
+      break;
+    case 107:
+      if (dataReady || animationContinue){
+        animationRainbow(dataLora[0], dataLora[1], dataLora[2]);  
+        dataReady = false;
+        animationContinue = true; 
+      }
+      break;
+    case 108:
+      if (dataReady || animationContinue){
+        frame = dataLora[4];
+        dataReady = false;
+        animationContinue = true;
+        mode = 109;
+        animationStroboscope(dataLora[0], dataLora[1], dataLora[2], dataLora[3]);   
+      }
+      break;
+    case 109:
+      if (animationContinue){     // appelé uniquement par le mode 108
+        animationStroboscope(dataLora[0], dataLora[1], dataLora[2], dataLora[3]);   
+        dataReady = false;
+        animationContinue = true;
+      }
+      break;
+    case 110:
+      if (dataReady || animationContinue){
+        animationNoise(dataLora[0], dataLora[1]);   
+        dataReady = false;
+        animationContinue = true;
+      }
+      break;
+    case 111:
+      if (dataReady || animationContinue){
+        animationBreathing(dataLora[0], dataLora[1], dataLora[2], dataLora[3]);   
+        dataReady = false;
+        animationContinue = true;
+      }
+      break;
+    case 112:
+      if (dataReady || animationContinue){
+        animationGradientFlow(dataLora[0], dataLora[1], dataLora[2], dataLora[3], dataLora[4], dataLora[5], dataLora[6]);   
+        dataReady = false;
+        animationContinue = true;
+      }
+      break;
+    case 113:
+      if (dataReady || animationContinue){
+        animationSparkle(dataLora[0], dataLora[1], dataLora[2], dataLora[3], dataLora[4]);   
+        dataReady = false;
+        animationContinue = true;
+      }
+      break;
+    case 114:
+      if (dataReady || animationContinue){
+        animationMatrix(dataLora[0]);   
+        dataReady = false;
+        animationContinue = true;
+      }
+      break;
+    case 115:
+      if (dataReady || animationContinue){
+        animationExplosion(dataLora[0], dataLora[1], dataLora[2], dataLora[3]);   
+        dataReady = false;
+        animationContinue = true;
+      }
+      break;
+    case 116:
+      if (dataReady || animationContinue){
+        animationWavePositiv(dataLora[0], dataLora[1], dataLora[2], dataLora[3], dataLora[4]);   
+        dataReady = false;
+        animationContinue = true;
+      }
+      break;
+    case 117:
+      if (dataReady || animationContinue){
+        animationScrolling(dataLora[0], dataLora[1], dataLora[2], dataLora[3], dataLora[4], dataLora[5]);   // défilement avec une couleur
+        dataReady = false;
+        animationContinue = true;
+      }
+      break;    
     case 200:
       if (dataReady){
         if (deviceID != dataLora[0]){
@@ -336,7 +314,34 @@ void modeChange(){
         dataReady = false;
       }
       break;
-
+    case 201:
+      mode = 0;
+      animationContinue = false;
+      routineStop();
+      break;
+    case 202:       // mode pour l'affichage de la batterie faible
+      animationScrolling(100, 0, 0, 200, 2, 3);
+      animationContinue = true;
+      break;
+    case 203:       // mode pour renvoyer le niveau de batterie
+      delay(50);
+      Radio.Send(&niveauBatterieGlobal, sizeof(niveauBatterieGlobal));
+      delay(100);
+      Radio.Rx(0);  // 0 = réception continue
+      mode = 0;
+      animationContinue = false;
+      break;
+    case 204:       // mode pour renvoyer le niveau de batterie sans réinitialisé le mode
+      delay(50);
+      Radio.Send(&niveauBatterieGlobal, sizeof(niveauBatterieGlobal));
+      delay(100);
+      Radio.Rx(0);  // 0 = réception continue
+      mode = modePrecedent;
+      break;
+    case 205:       // Affiche le niveau de batterie sur les LEDs
+      animationBattery(20, niveauBatterieGlobal);
+      animationContinue = true;
+      break;
     default:
       strip.clear(); 
       strip.show();
@@ -387,7 +392,7 @@ void loop() {
       tempsBatterie = tempsCourant;
       niveauBatterieGlobal = getBatteryLevel();
       if (niveauBatterieGlobal <= 8) {   // fait clignoter une led pour signaler le faible pourcentage
-        mode = 152;
+        mode = 202;
         animationContinue = true;
       }
       if (niveauBatterieGlobal <= 2) {   // eteind de force la carte pour préservé la batterie restante
@@ -424,63 +429,30 @@ void loop() {
 
 bool extractPayload(uint8_t *payload, uint16_t sizePayload, uint8_t n) {
   if (sizePayload < n * sizeof(uint8_t)) return false;
-  memcpy(dataLora, payload + 2, n * sizeof(uint8_t));
+  memcpy(dataLora, payload + 3, n * sizeof(uint8_t));
   dataReady = true;
   return true;
 }
 void OnRxDone(uint8_t *payload, uint16_t size, int16_t rssi, int8_t snr) {
   uint8_t IdRecu = 0;
+  uint8_t nbArgument = 0;
   dataReady = false;
   
   memcpy(&IdRecu, payload, sizeof(IdRecu)); // Lecture de l'ID
-  if (IdRecu != deviceID) return;           // si on ne vise pas ce composant
+  if (IdRecu != deviceID || IdRecu != 255) return;           // si on ne vise pas ce composant
 
   memcpy(&mode, payload + 1, sizeof(mode)); // Lecture du mode d'affichage
+  memcpy(&nbArgument, payload + 2, sizeof(nbArgument)); // Lecture du nombre d'argument(s)
 
-  if (mode == 151 || mode == 153 || mode == 154){ // extraction de 0 variable
-    dataReady = true;
-  }
-  if (mode == 200 || mode == 144){ // extraction de 1 variable
-    if (!extractPayload(payload, size, 1)) {
-      Serial.println("ERREUR 250 : Paquet tronqué, données incomplètes ! ");
-    } 
-  }
-  if (mode == 140){ // extraction de 2 variable
-    if (!extractPayload(payload, size, 2)) {
-      Serial.println("ERREUR 255 : Paquet tronqué, données incomplètes ! ");
-    } 
-  }
-  if (mode == 150){ // extraction de 3 variables
-    if (!extractPayload(payload, size, 3)) {
-      Serial.println("ERREUR 255 : Paquet tronqué, données incomplètes ! ");
-    } 
-  }
-  if (mode == 149 || mode == 148 || mode == 145 || mode == 141){ // extraction de 4 variables
-    if (!extractPayload(payload, size, 4)) {
-      Serial.println("ERREUR 255 : Paquet tronqué, données incomplètes ! ");
-    } 
-  }
-  if (mode == 146 || mode == 143 || mode == 138 || mode == 134){ // extraction de 5 variables
-    if (!extractPayload(payload, size, 5)) {
-      Serial.println("ERREUR 255 : Paquet tronqué, données incomplètes ! ");
-    } 
-  }
-  if (mode == 147){ // extraction de 6 variables
-    if (!extractPayload(payload, size, 6)) {
-      Serial.println("ERREUR 255 : Paquet tronqué, données incomplètes ! ");
-    } 
-  }
-  if (mode == 142){ // extraction de 7 variables
-    if (!extractPayload(payload, size, 7)) {
-      Serial.println("ERREUR 255 : Paquet tronqué, données incomplètes ! ");
-    } 
+  if (!extractPayload(payload, size, nbArgument)) {
+    Serial.println("ERREUR 250 : Paquet tronqué, données incomplètes ! ");
   }
      
   // --- Affichage DEBUG ---
   if (DEBUG_RECEPTION) {
     Serial.print("Message reçu : ");
-    Serial.print("Compteur/mode : ");
-    Serial.println(mode);
+    Serial.print("Compteur/mode : ");Serial.println(mode);
+    Serial.print("Nombre d'arguments : ");Serial.println(nbArgument);
   
     Serial.print("FFT (partielle) : ");
     for (uint8_t i = 0; i < FFT_SIZE; i++) {
