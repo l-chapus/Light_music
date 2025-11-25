@@ -28,7 +28,7 @@
 #define PIN_EN GPIO5
 #define TEMPO_SLEEP 1000 // temporisation pour le ON/OFF en millisecondes
 
-const uint8_t FFT_SIZE = 16; // Taille de la FFT
+const uint8_t DATA_SIZE = 16; // Taille du tableau des données reçu en LoRa
 
 const uint8_t CORRESPONDANCE_LED[10][10] = {
   {100, 81, 80, 61, 60, 41, 40, 21, 20, 1},

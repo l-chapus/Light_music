@@ -13,7 +13,7 @@ uint8_t deviceID = 0;        // variable de ton identifiant
 static RadioEvents_t RadioEvents; // Pour la réception LoRa
 
 void OnRxDone(uint8_t *payload, uint16_t size, int16_t rssi, int8_t snr);
-uint8_t dataLora[FFT_SIZE];   // tableau des données reçu en LoRa
+uint8_t dataLora[DATA_SIZE];   // tableau des données reçu en LoRa
 bool dataReady = false;
 
 CubeCell_NeoPixel strip(NUM_LEDS, PIN_LEDS, NEO_GRB + NEO_KHZ800);
@@ -74,7 +74,7 @@ void setup() {
 
 void setPixelColor(uint8_t x, uint8_t y, uint8_t R, uint8_t G, uint8_t B) {
   if (x > WIDTH  || x < 0 || y > HEIGHT || y < 0) {// si on est en dehors du tableau
-    Serial.println("ERREUR 2 : Coordonnées en dehors du tableau !"); 
+    Serial.println("ERREUR 1 : Coordonnées en dehors du tableau des LEDs !"); 
     return;
   }
   strip.setPixelColor(CORRESPONDANCE_LED[y][x], R, G, B);
@@ -359,7 +359,7 @@ void boutonInterrupt() {
   }
 
   if (digitalRead(PIN_BOUTON) == LOW) {
-    tempsAppui = millis() ;                // Sauvegarde le temps où le bouton a été appuyé
+    tempsAppui = millis();                // Sauvegarde le temps où le bouton a été appuyé
   }
   else {
     unsigned long int duration = millis() - tempsAppui;
@@ -445,7 +445,7 @@ void OnRxDone(uint8_t *payload, uint16_t size, int16_t rssi, int8_t snr) {
   memcpy(&nbArgument, payload + 2, sizeof(nbArgument)); // Lecture du nombre d'argument(s)
 
   if (!extractPayload(payload, size, nbArgument)) {
-    Serial.println("ERREUR 250 : Paquet tronqué, données incomplètes ! ");
+    Serial.println("ERREUR 2 : Paquet tronqué lors de la réception LoRa, données incomplètes ! ");
   }
      
   // --- Affichage DEBUG ---
@@ -455,7 +455,7 @@ void OnRxDone(uint8_t *payload, uint16_t size, int16_t rssi, int8_t snr) {
     Serial.print("Nombre d'arguments : ");Serial.println(nbArgument);
   
     Serial.print("FFT (partielle) : ");
-    for (uint8_t i = 0; i < FFT_SIZE; i++) {
+    for (uint8_t i = 0; i < DATA_SIZE; i++) {
       Serial.print(dataLora[i], 1); // 1 décimale
       Serial.print(" ");
     }
@@ -480,10 +480,13 @@ void routineStop() {
 }
 void routineStart() {
   if (DEBUG_BOUTON) Serial.println("ON");
+  tempsBatterie = millis();     // initialise le temps
+  tempsInactivitee = millis();  // initialise le temps
+  niveauBatterieGlobal = getBatteryLevel();
   frame = 0;
   digitalWrite(PIN_EN, etatSortie); // allume le bandeau LED
   delay(200);
-  for (int k=0; k<25; ++k){
+  for (int k=0; k<25; ++k){     // Animation de démarage
     animationWavePositiv(0, 20, 200, 20, 0);
   }
   delay(30);
@@ -569,7 +572,7 @@ void animationScrolling(uint8_t R, uint8_t G, uint8_t B, uint8_t vitesse, uint8_
     }
 
     default:
-      Serial.println("ERREUR 4 : Sens de défilement invalide !");
+      Serial.println("ERREUR 3 : Sens de défilement invalide dans le mode 117, la valeur doit être entre 0 et 3.");
       return;
   }
 
