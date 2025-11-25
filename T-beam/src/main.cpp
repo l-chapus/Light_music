@@ -5,6 +5,7 @@
 #include "BluetoothA2DPSink.h"
 #include <ArduinoFFT.h>
 #include <LoRa.h>
+#include "BluetoothSerial.h"
 
 #define SCREEN_WIDTH 128
 #define SCREEN_HEIGHT 64
@@ -14,6 +15,7 @@
 #define FFT_SIZE 512 
 
 Adafruit_SSD1306 display(SCREEN_WIDTH, SCREEN_HEIGHT, &Wire, OLED_RESET);
+BluetoothSerial SerialBT; // Bluetooth SPP pour commandes
 BluetoothA2DPSink a2dp_sink; // Instance de BluetoothA2DPSink pour la réception audio
 ArduinoFFT<float> FFT = ArduinoFFT<float>(); // Utilisation de ArduinoFFT pour les calculs FFT
 
@@ -59,12 +61,7 @@ void audio_data_callback(const uint8_t *data, uint32_t len) {
 
 void setup() {
   Serial.begin(115200);
-
   LoRa.setPins(LORA_CS, LORA_RST, LORA_IRQ); // Important !
-
-  //LoRa.setSpreadingFactor(7);    // Valeur minimale (7 = plus rapide, 12 = plus lent)
-  //LoRa.setSignalBandwidth(250E3); // 250 kHz = plus rapide, 125 kHz = défaut
-  //LoRa.setCodingRate4(5);        // 4/5 = plus rapide, 4/8 = plus lent
 
   if (!LoRa.begin(433E6)) {
     Serial.println("Erreur init LoRa !");
@@ -77,9 +74,12 @@ void setup() {
     while (true);
   }
 
-  a2dp_sink.start("T-BEAM audio");
-  a2dp_sink.set_stream_reader(audio_data_callback);
-
+  // Démarrage du Bluetooth SPP pour recevoir des commandes (remplace A2DP)
+  if (!SerialBT.begin("T-BEAM-CMD")) {
+    Serial.println("Erreur init Bluetooth SPP !");
+  } else {
+    Serial.println("Bluetooth SPP prêt !");
+  }
   Serial.println("Bluetooth prêt !");
 
   display.clearDisplay();
@@ -118,37 +118,57 @@ uint8_t getBatteryLevel(uint8_t ID, bool resetMode) {
       break;
     }
   }
-
   return level;
 }
 
 void sendDataLora(uint8_t ID, uint8_t mode, uint8_t* data, uint8_t length) {
+  Serial.print("Mode envoyé: ");Serial.println(mode);  
   LoRa.beginPacket();
   LoRa.write((uint8_t*)&ID, sizeof(ID)); // Envoie l'entier sur 1 octets
   LoRa.write((uint8_t*)&mode, sizeof(mode)); // Envoie l'entier sur 1 octets
   LoRa.write((uint8_t*)&length, sizeof(length)); // Envoie l'entier sur 1 octets
   LoRa.write(data, length); // écrit tout le buffer en une fois
-  //for (uint8_t i = 0; i < length; i++) {
-  //  LoRa.write((uint8_t*)&data[i], sizeof(data[i])); // Envoie l'entier sur 1 octets
-  //}
   LoRa.endPacket();
 }
 
 void fonction_test() {
-  getBatteryLevel(1, true);
-  delay(1000);
+  //getBatteryLevel(1, true);
+  //delay(1000);
 
   // Fonction vide pour test
   uint8_t ID = 1;
-  uint8_t mode = 108;
-  uint8_t R = 80;
-  uint8_t G = 10;
-  uint8_t B = 150;
+  uint8_t mode = 107;
+  uint8_t R = 10;
+  uint8_t G = 80;
+  uint8_t B = 200;
   uint8_t vitesse = 20;
   uint8_t sens = 20;
   uint8_t data[5] = {R, G, B, vitesse, sens};  
   sendDataLora(ID, mode, data, 5);
-  delay(1000);
+  delay(500);
+  sendDataLora(ID, ++mode, data, 5);
+  delay(100);
+}
+
+// Fonction de traitement des commandes reçues via Bluetooth SPP
+void handleCommand(const String &cmd) {
+  // Exemple simple : commandes textuelles
+  // "MODE n" -> définit le compteur (mode)
+  // "GETBAT" -> renvoie le niveau de batterie via SerialBT
+  // "PING" -> répond "PONG"
+  Serial.print("Cmd reçu: "); Serial.println(cmd);
+  if (cmd.startsWith("MODE ")) {
+    int m = cmd.substring(5).toInt();
+    bouton_compteur = (uint8_t)m;
+    SerialBT.printf("Mode set to %d\n", bouton_compteur);
+  } else if (cmd == "GETBAT") {
+    uint8_t level = getBatteryLevel(1, false);
+    SerialBT.printf("BAT:%u\n", level);
+  } else if (cmd == "PING") {
+    SerialBT.println("PONG");
+  } else {
+    SerialBT.println("UNKNOWN");
+  }
 }
 
 void loop() {
@@ -169,38 +189,14 @@ void loop() {
     delay(200); // Anti-rebond simple
 
     fonction_test(); // Test d'envoi
-
-    // Envoi via LoRa : entier au début
-    //LoRa.beginPacket();
-    //LoRa.write((uint8_t*)&bouton_compteur, sizeof(bouton_compteur)); // Envoie l'entier sur 2 octets
-    //LoRa.endPacket();
-    Serial.println("Compteur envoyé via LoRa");
   }
   lastButtonState = buttonState;
 
-  // Envoi FFT si prêt et 100 ms écoulées
-  if (fft_ready && (millis() - last_fft_send >= 10)) {
-    fft_ready = false;
-    Serial.println("last_fft_send est de : " + String(millis() - last_fft_send));
-    last_fft_send = millis();
-  
-    // ENVOI LoRa : compteur (mode) + vReal[]
-    uint8_t val = 0;
-    float val_f = 0;
-    uint8_t ID = 1;
-    LoRa.beginPacket();
-    LoRa.write((uint8_t*)&ID, sizeof(bouton_compteur)); // Envoie l'entier sur 2 octets
-    LoRa.write((uint8_t*)&bouton_compteur, sizeof(bouton_compteur)); // 1 octet
-
-    for (uint8_t i = 0; i < 16; i++) {
-      val_f = vReal[i];
-      if (val_f < 0) val_f = 0; // Juste au cas où
-      if (val_f > AMP_MAX) val_f = AMP_MAX; // amplitude max attendue
-      val = (uint8_t)(val_f * 255.0 / AMP_MAX); // Normalisation sur 8 bits
-      LoRa.write((uint8_t*)&val, sizeof(val)); // 1 octet par valeur
-    }
-    Serial.println("----------------");
-
-    LoRa.endPacket();
+  // Lecture des commandes Bluetooth SPP
+  if (SerialBT && SerialBT.available()) {
+    String cmd = SerialBT.readStringUntil('\n');
+    cmd.trim();
+    if (cmd.length() > 0) handleCommand(cmd);
   }
+
 }
