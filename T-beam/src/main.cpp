@@ -126,11 +126,11 @@ void sendDataLora(uint8_t ID, uint8_t mode, uint8_t* data, uint8_t length) {
   LoRa.beginPacket();
   LoRa.write((uint8_t*)&ID, sizeof(ID)); // Envoie l'entier sur 1 octets
   LoRa.write((uint8_t*)&mode, sizeof(mode)); // Envoie l'entier sur 1 octets
-  LoRa.write((uint8_t*)&length, sizeof(length)); // Envoie l'entier sur 2 octets
-
-  for (uint8_t i = 0; i < length; i++) {
-    LoRa.write((uint8_t*)&data[i], sizeof(data[i])); // Envoie l'entier sur 1 octets
-  }
+  LoRa.write((uint8_t*)&length, sizeof(length)); // Envoie l'entier sur 1 octets
+  LoRa.write(data, length); // écrit tout le buffer en une fois
+  //for (uint8_t i = 0; i < length; i++) {
+  //  LoRa.write((uint8_t*)&data[i], sizeof(data[i])); // Envoie l'entier sur 1 octets
+  //}
   LoRa.endPacket();
 }
 
@@ -140,7 +140,7 @@ void fonction_test() {
 
   // Fonction vide pour test
   uint8_t ID = 1;
-  uint8_t mode = 138;
+  uint8_t mode = 108;
   uint8_t R = 80;
   uint8_t G = 10;
   uint8_t B = 150;

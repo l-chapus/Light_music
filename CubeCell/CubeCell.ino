@@ -439,15 +439,11 @@ void OnRxDone(uint8_t *payload, uint16_t size, int16_t rssi, int8_t snr) {
   dataReady = false;
   
   memcpy(&IdRecu, payload, sizeof(IdRecu)); // Lecture de l'ID
-  if (IdRecu != deviceID || IdRecu != 255) return;           // si on ne vise pas ce composant
+  if (IdRecu != deviceID && IdRecu != 255) return;           // si on ne vise pas ce composant
 
   memcpy(&mode, payload + 1, sizeof(mode)); // Lecture du mode d'affichage
   memcpy(&nbArgument, payload + 2, sizeof(nbArgument)); // Lecture du nombre d'argument(s)
-
-  if (!extractPayload(payload, size, nbArgument)) {
-    Serial.println("ERREUR 2 : Paquet tronqué lors de la réception LoRa, données incomplètes ! ");
-  }
-     
+  
   // --- Affichage DEBUG ---
   if (DEBUG_RECEPTION) {
     Serial.print("Message reçu : ");
@@ -463,6 +459,10 @@ void OnRxDone(uint8_t *payload, uint16_t size, int16_t rssi, int8_t snr) {
     Serial.printf("RSSI: %d dBm, SNR: %d dB\n", rssi, snr);
     Serial.println("-------------------");
   }
+
+  if (!extractPayload(payload, size, nbArgument)) {
+    Serial.println("ERREUR 2 : Paquet tronqué lors de la réception LoRa, données incomplètes ! ");
+  }  
   if (dataReady) modeChange();
 }
 
