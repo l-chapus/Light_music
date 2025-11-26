@@ -17,11 +17,14 @@ import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.layout.*
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
+import androidx.compose.runtime.getValue
 import androidx.compose.runtime.saveable.rememberSaveable
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
@@ -34,6 +37,8 @@ import kotlinx.coroutines.withContext
 import java.io.IOException
 import java.io.OutputStream
 import java.util.UUID
+import androidx.compose.foundation.text.KeyboardOptions
+
 
 class MainActivity : ComponentActivity() {
 
@@ -155,7 +160,8 @@ class MainActivity : ComponentActivity() {
     }
 }
 
-// --- INTERFACE UTILISATEUR AMÉLIORÉE AVEC JETPACK COMPOSE ---
+// --- INTERFACE UTILISATEUR AMÉLIORÉE AVEC CHAMPS RGB ---
+@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun BluetoothControlScreen(
     modifier: Modifier = Modifier,
@@ -163,14 +169,26 @@ fun BluetoothControlScreen(
     onConnectClick: (String) -> Unit,
     onSendCommandClick: (String) -> Unit
 ) {
-    // État pour stocker l'adresse MAC saisie par l'utilisateur
+    // État pour l'adresse MAC (inchangé)
     var macAddress by rememberSaveable { mutableStateOf("2C:BC:BB:A8:E2:7A") }
+
+    // --- GESTION DE LA LISTE DÉROULANTE (inchangé) ---
+    val commandList = listOf("Automatique", "Afficher_pixel", "Afficher_ligne", "Afficher_colonne")
+    var isExpanded by remember { mutableStateOf(false) }
+    var selectedCommand by remember { mutableStateOf(commandList[0]) }
+
+    // --- NOUVEAU : GESTION DES CHAMPS RGB ---
+    var redValue by rememberSaveable { mutableStateOf("0") }
+    var greenValue by rememberSaveable { mutableStateOf("0") }
+    var blueValue by rememberSaveable { mutableStateOf("0") }
+    var vitesse by rememberSaveable { mutableStateOf("0") }
+    // --- FIN DE LA NOUVELLE GESTION ---
 
     Column(
         modifier = modifier
             .fillMaxSize()
-            .padding(16.dp), // Ajoute de l'espace sur les bords
-        verticalArrangement = Arrangement.spacedBy(16.dp), // Espace entre les éléments
+            .padding(16.dp),
+        verticalArrangement = Arrangement.spacedBy(16.dp),
         horizontalAlignment = Alignment.CenterHorizontally
     ) {
         Text(
@@ -179,9 +197,7 @@ fun BluetoothControlScreen(
             fontWeight = FontWeight.Bold
         )
 
-        Spacer(modifier = Modifier.height(16.dp))
-
-        // Champ de texte pour l'adresse MAC
+        // Champ de texte pour l'adresse MAC (inchangé)
         OutlinedTextField(
             value = macAddress,
             onValueChange = { macAddress = it },
@@ -189,18 +205,18 @@ fun BluetoothControlScreen(
             modifier = Modifier.fillMaxWidth()
         )
 
-        // Statut de la connexion
+        // Statut de la connexion (inchangé)
         Text(
             text = "Statut : $connectionStatus",
             color = when (connectionStatus) {
-                "Connecté" -> Color(0xFF4CAF50) // Vert
-                "Erreur de connexion" -> MaterialTheme.colorScheme.error // Rouge
+                "Connecté" -> Color(0xFF4CAF50)
+                "Erreur de connexion", "Permission manquante", "Adresse MAC invalide" -> MaterialTheme.colorScheme.error
                 else -> Color.Gray
             },
             fontWeight = FontWeight.SemiBold
         )
 
-        // Bouton de connexion
+        // Bouton de connexion (inchangé)
         Button(
             onClick = { onConnectClick(macAddress) },
             modifier = Modifier.fillMaxWidth()
@@ -208,36 +224,99 @@ fun BluetoothControlScreen(
             Text("Se Connecter")
         }
 
-        Spacer(modifier = Modifier.weight(1f)) // Pousse les commandes vers le bas
-
-        // Section pour les commandes
-        Column(horizontalAlignment = Alignment.CenterHorizontally) {
-            Text(
-                text = "Commandes",
-                style = MaterialTheme.typography.titleMedium
+        // --- NOUVELLE SECTION DE COMMANDE (juste après la connexion) ---
+        // Conteneur pour la liste déroulante (inchangé)
+        ExposedDropdownMenuBox(
+            expanded = isExpanded,
+            onExpandedChange = { isExpanded = it },
+            modifier = Modifier.fillMaxWidth()
+        ) {
+            OutlinedTextField(
+                value = selectedCommand,
+                onValueChange = {},
+                readOnly = true,
+                label = { Text("Choisir une commande") },
+                trailingIcon = { ExposedDropdownMenuDefaults.TrailingIcon(expanded = isExpanded) },
+                modifier = Modifier
+                    .menuAnchor()
+                    .fillMaxWidth()
             )
-
-            // Ligne pour les boutons ON/OFF
-            Row(
-                modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.spacedBy(16.dp, Alignment.CenterHorizontally)
+            ExposedDropdownMenu(
+                expanded = isExpanded,
+                onDismissRequest = { isExpanded = false }
             ) {
-                Button(
-                    onClick = { onSendCommandClick("LED_ON") },
-                    // Le bouton est désactivé si on n'est pas connecté
-                    enabled = connectionStatus == "Connecté"
-                ) {
-                    Text("LED ON")
-                }
-
-                Button(
-                    onClick = { onSendCommandClick("LED_OFF") },
-                    enabled = connectionStatus == "Connecté",
-                    colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.secondary)
-                ) {
-                    Text("LED OFF")
+                commandList.forEach { command ->
+                    DropdownMenuItem(
+                        text = { Text(command) },
+                        onClick = {
+                            selectedCommand = command
+                            isExpanded = false
+                        }
+                    )
                 }
             }
+        }
+
+        // --- RANGÉE POUR LES CHAMPS RGB (MISE À JOUR) ---
+        Row(
+            modifier = Modifier.fillMaxWidth(),
+            horizontalArrangement = Arrangement.spacedBy(8.dp)
+        ) {
+            if (selectedCommand == "Afficher_pixel" || selectedCommand == "Afficher_ligne") {// Champ pour la valeur Rouge
+                OutlinedTextField(
+                    value = redValue,
+                    onValueChange = { redValue = it.filter { char -> char.isDigit() }.take(3) },
+                    label = { Text("Red") },
+                    modifier = Modifier.weight(1f),
+                    // --- AJOUT ---
+                    keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number)
+                )
+                // Champ pour la valeur Verte
+                OutlinedTextField(
+                    value = greenValue,
+                    onValueChange = { greenValue = it.filter { char -> char.isDigit() }.take(3) },
+                    label = { Text("Green") },
+                    modifier = Modifier.weight(1f),
+                    // --- AJOUT ---
+                    keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number)
+                )
+                // Champ pour la valeur Bleue
+                OutlinedTextField(
+                    value = blueValue,
+                    onValueChange = { blueValue = it.filter { char -> char.isDigit() }.take(3) },
+                    label = { Text("Blue") },
+                    modifier = Modifier.weight(1f),
+                    // --- AJOUT ---
+                    keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number)
+                )
+            }
+            if (selectedCommand == "FLASH") {// Champ pour la valeur Rouge
+                OutlinedTextField(
+                    value = vitesse,
+                    onValueChange = { vitesse = it.filter { char -> char.isDigit() }.take(3) },
+                    label = { Text("Temps") },
+                    modifier = Modifier.weight(1f),
+                    // --- AJOUT ---
+                    keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number)
+                )
+            }
+        }
+
+
+        // Le Spacer est maintenant ici pour pousser le bouton d'envoi vers le bas
+        Spacer(modifier = Modifier.weight(1f))
+
+        // Bouton unique pour envoyer la commande finale
+        Button(
+            onClick = {
+                // Construit la commande finale en concaténant les valeurs RGB
+                val finalCommand = "$selectedCommand:${redValue.ifBlank { "0" }}:${greenValue.ifBlank { "0" }}:${blueValue.ifBlank { "0" }}"
+                onSendCommandClick(finalCommand)
+            },
+            enabled = connectionStatus == "Connecté",
+            modifier = Modifier.fillMaxWidth()
+        ) {
+            Text("Envoyer la Commande")
         }
     }
 }
@@ -246,7 +325,6 @@ fun BluetoothControlScreen(
 @Composable
 fun DefaultPreview() {
     BragiTheme {
-        // Preview avec des états simulés
         BluetoothControlScreen(
             connectionStatus = "Déconnecté",
             onConnectClick = {},
