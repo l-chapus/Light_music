@@ -264,16 +264,19 @@ fun BluetoothControlScreen(
     onStartScanClick: () -> Unit
 ) {
     var macAddress by rememberSaveable { mutableStateOf("2C:BC:BB:A8:E2:7A") }
-    val commandList = listOf("Automatique", "Afficher_pixel", "Afficher_ligne", "Afficher_colonne")
+    val commandList = listOf("Automatique", "Afficher_pixel", "Afficher_colonne", "Afficher_ligne", "Couleur_statique", "Effect_trou_noir", "Defilement_vague", "Defilement_RBG", "Stroboscope", "Bruit_television", "Respiration", "Couleur_aleatoire", "Matrix", "Halo", "Défilement_sens", "Change_id", "Stop_Led", "Batterie_niveau", "Afficher_batterie")
     var isExpanded by remember { mutableStateOf(false) }
     var selectedCommand by remember { mutableStateOf(commandList[0]) }
-
     var redValue by rememberSaveable { mutableStateOf("0") }
     var greenValue by rememberSaveable { mutableStateOf("0") }
     var blueValue by rememberSaveable { mutableStateOf("0") }
     var vitesse by rememberSaveable { mutableStateOf("0") }
+    var sens by rememberSaveable { mutableStateOf("0") }
+    var numeroLigne by rememberSaveable { mutableStateOf("0") }
+    var numeroColonne by rememberSaveable { mutableStateOf("0") }
     var positionX by rememberSaveable { mutableStateOf("0") }
     var positionY by rememberSaveable { mutableStateOf("0") }
+    var Id by rememberSaveable { mutableStateOf("1") }
 
     Column(
         modifier = modifier
@@ -367,7 +370,7 @@ fun BluetoothControlScreen(
         }
 
         // Affiche les champs RGB si la commande n'est pas "Automatique"
-        if (selectedCommand != "Automatique") {
+        if (selectedCommand == "Afficher_pixel" || selectedCommand == "Afficher_ligne" || selectedCommand == "Afficher_colonne" || selectedCommand == "Couleur_statique" || selectedCommand == "Effect_trou_noir" || selectedCommand == "Defilement_vague") {
             Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                 val fieldModifier = Modifier.weight(1f)
                 TextField(value = redValue, onValueChange = { redValue = it }, label = { Text("R") }, keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number), modifier = fieldModifier)
@@ -384,16 +387,20 @@ fun BluetoothControlScreen(
                 TextField(value = positionY, onValueChange = { positionY = it }, label = { Text("Position Y") }, keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number), modifier = fieldModifier)
             }
         }
-
+        if (selectedCommand == "Afficher_ligne") {
+            // Affiche le champ Vitesse pour toutes les commandes
+            TextField(value = numeroLigne, onValueChange = { numeroLigne = it }, label = { Text("Numéro de la ligne") }, keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number), modifier = Modifier.fillMaxWidth())
+        }
+        if (selectedCommand == "Afficher_colonne") {
         // Affiche le champ Vitesse pour toutes les commandes
-        TextField(
-            value = vitesse,
-            onValueChange = { vitesse = it },
-            label = { Text("Vitesse") },
-            keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
-            modifier = Modifier.fillMaxWidth()
-        )
+        TextField(value = numeroColonne, onValueChange = { numeroColonne = it }, label = { Text("Numéro de la colonne") }, keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number), modifier = Modifier.fillMaxWidth())
+        }
 
+        if (selectedCommand == "Effect_trou_noir" || selectedCommand == "Defilement_vague") {
+            // Affiche le champ Vitesse pour toutes les commandes
+            TextField(value = vitesse, onValueChange = { vitesse = it }, label = { Text("Vitesse") }, keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number), modifier = Modifier.fillMaxWidth())
+            TextField(value = sens, onValueChange = { sens = it }, label = { Text("Sens") }, keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number), modifier = Modifier.fillMaxWidth())
+        }
 
         Spacer(modifier = Modifier.weight(1f))
 
@@ -401,7 +408,13 @@ fun BluetoothControlScreen(
             onClick = {
                 // Adapter la construction de la commande en fonction de la sélection
                 val commandString = when (selectedCommand) {
-                    "Afficher_pixel" -> "$selectedCommand;${positionX.toIntOrNull() ?: 0};${positionY.toIntOrNull() ?: 0};${redValue.toIntOrNull() ?: 0};${greenValue.toIntOrNull() ?: 0};${blueValue.toIntOrNull() ?: 0};${vitesse.toIntOrNull() ?: 0}"
+                    "Afficher_pixel" -> "${Id.toIntOrNull() ?: 0};101;${positionX.toIntOrNull() ?: 0};${positionY.toIntOrNull() ?: 0};${redValue.toIntOrNull() ?: 0};${greenValue.toIntOrNull() ?: 0};${blueValue.toIntOrNull() ?: 0}"
+                    "Afficher_colonne" -> "${Id.toIntOrNull() ?: 0};102;${redValue.toIntOrNull() ?: 0};${greenValue.toIntOrNull() ?: 0};${blueValue.toIntOrNull() ?: 0};${numeroColonne.toIntOrNull() ?: 0}"
+                    "Afficher_ligne" -> "${Id.toIntOrNull() ?: 0};103;${redValue.toIntOrNull() ?: 0};${greenValue.toIntOrNull() ?: 0};${blueValue.toIntOrNull() ?: 0};${numeroLigne.toIntOrNull() ?: 0}"
+                    "Couleur_statique" -> "${Id.toIntOrNull() ?: 0};104;${redValue.toIntOrNull() ?: 0};${greenValue.toIntOrNull() ?: 0};${blueValue.toIntOrNull() ?: 0}"
+                    "Effet_trou_noir" -> "${Id.toIntOrNull() ?: 0};105;${redValue.toIntOrNull() ?: 0};${greenValue.toIntOrNull() ?: 0};${blueValue.toIntOrNull() ?: 0};${vitesse.toIntOrNull() ?: 0};${sens.toIntOrNull() ?: 0}"
+                    "Defilement_vague" -> "${Id.toIntOrNull() ?: 0};106;${redValue.toIntOrNull() ?: 0};${greenValue.toIntOrNull() ?: 0};${blueValue.toIntOrNull() ?: 0};${vitesse.toIntOrNull() ?: 0};${sens.toIntOrNull() ?: 0}"
+
                     "Automatique" -> "$selectedCommand;${vitesse.toIntOrNull() ?: 0}"
                     else -> "$selectedCommand;${redValue.toIntOrNull() ?: 0};${greenValue.toIntOrNull() ?: 0};${blueValue.toIntOrNull() ?: 0};${vitesse.toIntOrNull() ?: 0}"
                 }

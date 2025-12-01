@@ -152,23 +152,63 @@ void fonction_test() {
 
 // Fonction de traitement des commandes reçues via Bluetooth SPP
 void handleCommand(const String &cmd) {
-  // Exemple simple : commandes textuelles
-  // "MODE n" -> définit le compteur (mode)
-  // "GETBAT" -> renvoie le niveau de batterie via SerialBT
-  // "PING" -> répond "PONG"
+  // Convertit une commande "n1;n2;n3;..." en bytes uint8_t et envoie via LoRa.
+  // Format attendu : ID;MODE;PARAM1;PARAM2;...
   Serial.print("Cmd reçu: "); Serial.println(cmd);
-  if (cmd.startsWith("MODE ")) {
-    int m = cmd.substring(5).toInt();
-    bouton_compteur = (uint8_t)m;
-    SerialBT.printf("Mode set to %d\n", bouton_compteur);
-  } else if (cmd == "GETBAT") {
-    uint8_t level = getBatteryLevel(1, false);
-    SerialBT.printf("BAT:%u\n", level);
-  } else if (cmd == "PING") {
-    SerialBT.println("PONG");
-  } else {
-    SerialBT.println("UNKNOWN");
+
+  // Copie dans un buffer modifiable
+  char buf[128];
+  cmd.toCharArray(buf, sizeof(buf));
+
+  const uint8_t MAX_PARAMS = 10;
+  uint8_t params[MAX_PARAMS];
+  uint8_t count = 0;
+
+  char *token = strtok(buf, ";");
+  while (token != NULL && count < MAX_PARAMS) {
+    long v = atol(token);
+    if (v < 0) v = 0;
+    if (v > 255) v = 255; // clamp sur 0..255
+    params[count++] = (uint8_t)v;
+    token = strtok(NULL, ";");
   }
+
+  if (count == 0) {
+    Serial.println("Aucun nombre trouve dans la commande.");
+    SerialBT.println("ERR:EMPTY");
+    return;
+  }
+
+  // ID = premier octet, MODE = deuxième octet (si présent), data = reste
+  uint8_t ID = params[0];
+  uint8_t mode = 0;
+  uint8_t *data = NULL;
+  uint8_t datalen = 0;
+
+  if (count >= 2) {
+    mode = params[1];
+    if (count > 2) {
+      data = &params[2];
+      datalen = count - 2;
+    }
+  } else {
+    // si seul ID fourni, on envoie sans data avec mode = 0
+    mode = 0;
+    datalen = 0;
+  }
+
+  // Affiche les valeurs converties pour debug
+  Serial.print("Parsed bytes: ");
+  for (uint8_t i = 0; i < count; i++) {
+    Serial.print(params[i]);
+    if (i + 1 < count) Serial.print(", ");
+  }
+  Serial.println("Longueur des données envoyées : ");Serial.print(datalen);
+  Serial.println();
+
+  // Envoi via LoRa
+  sendDataLora(ID, mode, data, datalen);
+  SerialBT.println("OK");
 }
 
 void loop() {
