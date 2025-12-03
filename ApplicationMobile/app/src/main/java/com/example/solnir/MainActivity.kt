@@ -264,14 +264,21 @@ fun BluetoothControlScreen(
     onStartScanClick: () -> Unit
 ) {
     var macAddress by rememberSaveable { mutableStateOf("2C:BC:BB:A8:E2:7A") }
-    val commandList = listOf("Automatique", "Afficher_pixel", "Afficher_colonne", "Afficher_ligne", "Couleur_statique", "Effect_trou_noir", "Defilement_vague", "Defilement_RBG", "Stroboscope", "Bruit_television", "Respiration", "Couleur_aleatoire", "Matrix", "Halo", "Défilement_sens", "Change_id", "Stop_Led", "Batterie_niveau", "Afficher_batterie")
+    val commandList = listOf("Automatique", "Afficher_pixel", "Afficher_colonne", "Afficher_ligne", "Couleur_statique", "Effect_trou_noir", "Defilement_vague", "Defilement_RBG", "Stroboscope", "Bruit_television", "Respiration", "Degrader_Couleurs", "Remplissage_aleatoire", "Matrix", "Halo", "Halo_negatif", "Defilement_sens", "Change_id", "Stop_Led", "Batterie_niveau", "Afficher_batterie")
     var isExpanded by remember { mutableStateOf(false) }
     var selectedCommand by remember { mutableStateOf(commandList[0]) }
     var redValue by rememberSaveable { mutableStateOf("0") }
     var greenValue by rememberSaveable { mutableStateOf("0") }
     var blueValue by rememberSaveable { mutableStateOf("0") }
+    var redValue2 by rememberSaveable { mutableStateOf("0") }
+    var greenValue2 by rememberSaveable { mutableStateOf("0") }
+    var blueValue2 by rememberSaveable { mutableStateOf("0") }
     var vitesse by rememberSaveable { mutableStateOf("0") }
+    var trainee by rememberSaveable { mutableStateOf("0") }
+    var remplissage by rememberSaveable { mutableStateOf("0") }
     var sens by rememberSaveable { mutableStateOf("0") }
+    var intensite by rememberSaveable { mutableStateOf("50") }
+    var nombreAppel by rememberSaveable { mutableStateOf("0") }
     var numeroLigne by rememberSaveable { mutableStateOf("0") }
     var numeroColonne by rememberSaveable { mutableStateOf("0") }
     var positionX by rememberSaveable { mutableStateOf("0") }
@@ -290,7 +297,6 @@ fun BluetoothControlScreen(
             fontSize = 24.sp,
             fontWeight = FontWeight.Bold
         )
-
 
         Divider(modifier = Modifier.padding(vertical = 8.dp))
 
@@ -369,13 +375,21 @@ fun BluetoothControlScreen(
             }
         }
 
-        // Affiche les champs RGB si la commande n'est pas "Automatique"
-        if (selectedCommand == "Afficher_pixel" || selectedCommand == "Afficher_ligne" || selectedCommand == "Afficher_colonne" || selectedCommand == "Couleur_statique" || selectedCommand == "Effect_trou_noir" || selectedCommand == "Defilement_vague") {
+        if (selectedCommand == "Defilement_sens" || selectedCommand == "Halo_negatif" || selectedCommand == "Halo" || selectedCommand == "Remplissage_aleatoire" || selectedCommand == "Degrader_Couleurs" || selectedCommand == "Respiration" || selectedCommand == "Afficher_pixel" || selectedCommand == "Afficher_ligne" || selectedCommand == "Afficher_colonne" || selectedCommand == "Couleur_statique" || selectedCommand == "Effect_trou_noir" || selectedCommand == "Defilement_vague" || selectedCommand == "Stroboscope") {
             Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                 val fieldModifier = Modifier.weight(1f)
                 TextField(value = redValue, onValueChange = { redValue = it }, label = { Text("R") }, keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number), modifier = fieldModifier)
                 TextField(value = greenValue, onValueChange = { greenValue = it }, label = { Text("G") }, keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number), modifier = fieldModifier)
                 TextField(value = blueValue, onValueChange = { blueValue = it }, label = { Text("B") }, keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number), modifier = fieldModifier)
+            }
+        }
+
+        if (selectedCommand == "Degrader_Couleurs") {
+            Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                val fieldModifier = Modifier.weight(1f)
+                TextField(value = redValue2, onValueChange = { redValue2 = it }, label = { Text("R") }, keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number), modifier = fieldModifier)
+                TextField(value = greenValue2, onValueChange = { greenValue2 = it }, label = { Text("G") }, keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number), modifier = fieldModifier)
+                TextField(value = blueValue2, onValueChange = { blueValue2 = it }, label = { Text("B") }, keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number), modifier = fieldModifier)
             }
         }
 
@@ -396,10 +410,29 @@ fun BluetoothControlScreen(
         TextField(value = numeroColonne, onValueChange = { numeroColonne = it }, label = { Text("Numéro de la colonne") }, keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number), modifier = Modifier.fillMaxWidth())
         }
 
-        if (selectedCommand == "Effect_trou_noir" || selectedCommand == "Defilement_vague") {
-            // Affiche le champ Vitesse pour toutes les commandes
+        if (selectedCommand == "Defilement_sens" || selectedCommand == "Halo_negatif" || selectedCommand == "Effect_trou_noir" || selectedCommand == "Defilement_vague" || selectedCommand == "Defilement_RBG") {
             TextField(value = vitesse, onValueChange = { vitesse = it }, label = { Text("Vitesse") }, keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number), modifier = Modifier.fillMaxWidth())
             TextField(value = sens, onValueChange = { sens = it }, label = { Text("Sens") }, keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number), modifier = Modifier.fillMaxWidth())
+        }
+        if (selectedCommand == "Halo" || selectedCommand == "Matrix" ||selectedCommand == "Remplissage_aleatoire" || selectedCommand == "Respiration" ||selectedCommand == "Degrader_Couleurs") {
+            TextField(value = vitesse, onValueChange = { vitesse = it }, label = { Text("Vitesse") }, keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number), modifier = Modifier.fillMaxWidth())
+        }
+        if (selectedCommand == "Bruit_television") {
+            TextField(value = vitesse, onValueChange = { vitesse = it }, label = { Text("Vitesse") }, keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number), modifier = Modifier.fillMaxWidth())
+            TextField(value = intensite, onValueChange = { intensite = it }, label = { Text("Intensité de la couleur") }, keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number), modifier = Modifier.fillMaxWidth())
+        }
+        if (selectedCommand == "Defilement_RBG") {
+            TextField(value = intensite, onValueChange = { intensite = it }, label = { Text("Intensité de la couleur") }, keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number), modifier = Modifier.fillMaxWidth())
+        }
+        if (selectedCommand == "Stroboscope") {
+            TextField(value = vitesse, onValueChange = { vitesse = it }, label = { Text("Vitesse") }, keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number), modifier = Modifier.fillMaxWidth())
+            TextField(value = nombreAppel, onValueChange = { nombreAppel = it }, label = { Text("Nombre d'appel (255 pour infini)") }, keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number), modifier = Modifier.fillMaxWidth())
+        }
+        if (selectedCommand == "Remplissage_aleatoire") {
+            TextField(value = remplissage, onValueChange = { remplissage = it }, label = { Text("Remplissage de la couleur") }, keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number), modifier = Modifier.fillMaxWidth())
+        }
+        if (selectedCommand == "Defilement_sens") {
+            TextField(value = trainee, onValueChange = { trainee = it }, label = { Text("Trainée de la couleur") }, keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number), modifier = Modifier.fillMaxWidth())
         }
 
         Spacer(modifier = Modifier.weight(1f))
@@ -414,6 +447,16 @@ fun BluetoothControlScreen(
                     "Couleur_statique" -> "${Id.toIntOrNull() ?: 0};104;${redValue.toIntOrNull() ?: 0};${greenValue.toIntOrNull() ?: 0};${blueValue.toIntOrNull() ?: 0}"
                     "Effet_trou_noir" -> "${Id.toIntOrNull() ?: 0};105;${redValue.toIntOrNull() ?: 0};${greenValue.toIntOrNull() ?: 0};${blueValue.toIntOrNull() ?: 0};${vitesse.toIntOrNull() ?: 0};${sens.toIntOrNull() ?: 0}"
                     "Defilement_vague" -> "${Id.toIntOrNull() ?: 0};106;${redValue.toIntOrNull() ?: 0};${greenValue.toIntOrNull() ?: 0};${blueValue.toIntOrNull() ?: 0};${vitesse.toIntOrNull() ?: 0};${sens.toIntOrNull() ?: 0}"
+                    "Defilement_RBG" -> "${Id.toIntOrNull() ?: 0};107;${vitesse.toIntOrNull() ?: 0};${sens.toIntOrNull() ?: 0};${intensite.toIntOrNull() ?: 0}"
+                    "Stroboscope" -> "${Id.toIntOrNull() ?: 0};108;${redValue.toIntOrNull() ?: 0};${greenValue.toIntOrNull() ?: 0};${blueValue.toIntOrNull() ?: 0};${vitesse.toIntOrNull() ?: 0};${nombreAppel.toIntOrNull() ?: 0}"
+                    "Bruit_television" -> "${Id.toIntOrNull() ?: 0};110;${vitesse.toIntOrNull() ?: 0};${intensite.toIntOrNull() ?: 0}"
+                    "Respiration" -> "${Id.toIntOrNull() ?: 0};111;${redValue.toIntOrNull() ?: 0};${greenValue.toIntOrNull() ?: 0};${blueValue.toIntOrNull() ?: 0};${vitesse.toIntOrNull() ?: 0}"
+                    "Degrader_Couleurs" -> "${Id.toIntOrNull() ?: 0};112;${redValue.toIntOrNull() ?: 0};${greenValue.toIntOrNull() ?: 0};${blueValue.toIntOrNull() ?: 0};${redValue2.toIntOrNull() ?: 0};${greenValue2.toIntOrNull() ?: 0};${blueValue2.toIntOrNull() ?: 0};${vitesse.toIntOrNull() ?: 0}"
+                    "Remplissage_aleatoire" -> "${Id.toIntOrNull() ?: 0};113;${redValue.toIntOrNull() ?: 0};${greenValue.toIntOrNull() ?: 0};${blueValue.toIntOrNull() ?: 0};${vitesse.toIntOrNull() ?: 0};${remplissage.toIntOrNull() ?: 0}"
+                    "Matrix" -> "${Id.toIntOrNull() ?: 0};114;${vitesse.toIntOrNull() ?: 0}"
+                    "Halo" -> "${Id.toIntOrNull() ?: 0};115;${redValue.toIntOrNull() ?: 0};${greenValue.toIntOrNull() ?: 0};${blueValue.toIntOrNull() ?: 0};${vitesse.toIntOrNull() ?: 0}"
+                    "Halo_negatif" -> "${Id.toIntOrNull() ?: 0};116;${redValue.toIntOrNull() ?: 0};${greenValue.toIntOrNull() ?: 0};${blueValue.toIntOrNull() ?: 0};${vitesse.toIntOrNull() ?: 0};${sens.toIntOrNull() ?: 0}"
+                    "Defilement_sens" -> "${Id.toIntOrNull() ?: 0};117;${redValue.toIntOrNull() ?: 0};${greenValue.toIntOrNull() ?: 0};${blueValue.toIntOrNull() ?: 0};${vitesse.toIntOrNull() ?: 0};${sens.toIntOrNull() ?: 0};${trainee.toIntOrNull() ?: 0}"
 
                     "Automatique" -> "$selectedCommand;${vitesse.toIntOrNull() ?: 0}"
                     else -> "$selectedCommand;${redValue.toIntOrNull() ?: 0};${greenValue.toIntOrNull() ?: 0};${blueValue.toIntOrNull() ?: 0};${vitesse.toIntOrNull() ?: 0}"
