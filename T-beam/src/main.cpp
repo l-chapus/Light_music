@@ -211,6 +211,18 @@ void handleCommand(const String &cmd) {
   SerialBT.println("OK");
 }
 
+// Nouvelle fonction : lit une ligne depuis le port série USB et la traite
+void handleSerialInput() {
+  if (!Serial || !Serial.available()) return;
+  String cmd = Serial.readStringUntil('\n');
+  cmd.trim();
+  if (cmd.length() == 0) return;
+  Serial.print("Cmd série reçu: ");
+  Serial.println(cmd);
+  // Réutilise le parser existant pour envoyer via LoRa
+  //handleCommand(cmd);
+}
+
 void loop() {
   static unsigned long last_fft_send = 0;
 
@@ -237,6 +249,11 @@ void loop() {
     String cmd = SerialBT.readStringUntil('\n');
     cmd.trim();
     if (cmd.length() > 0) handleCommand(cmd);
+  }
+
+  // Lecture du port série USB (nouveau) : délègue à la fonction handleSerialInput()
+  if (Serial && Serial.available()) {
+    handleSerialInput();
   }
 
 }

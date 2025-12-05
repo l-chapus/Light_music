@@ -1,0 +1,175 @@
+﻿namespace Solnir
+{
+    partial class Form1
+    {
+        /// <summary>
+        /// Variable nécessaire au concepteur.
+        /// </summary>
+        private System.ComponentModel.IContainer components = null;
+
+        /// <summary>
+        /// Nettoyage des ressources utilisées.
+        /// </summary>
+        /// <param name="disposing">true si les ressources managées doivent être supprimées ; sinon, false.</param>
+        protected override void Dispose(bool disposing)
+        {
+            if (disposing && (components != null))
+            {
+                components.Dispose();
+            }
+            base.Dispose(disposing);
+        }
+
+        #region Code généré par le Concepteur Windows Form
+
+        /// <summary>
+        /// Méthode requise pour la prise en charge du concepteur - ne modifiez pas
+        /// le contenu de cette méthode avec l'éditeur de code.
+        /// </summary>
+        private void InitializeComponent()
+        {
+            this.components = new System.ComponentModel.Container();
+            this.cbPorts = new System.Windows.Forms.ComboBox();
+            this.btnRefresh = new System.Windows.Forms.Button();
+            this.btnOpenClose = new System.Windows.Forms.Button();
+            this.cbBaudRate = new System.Windows.Forms.ComboBox();
+            this.txtCommand = new System.Windows.Forms.TextBox();
+            this.btnSend = new System.Windows.Forms.Button();
+            this.txtLog = new System.Windows.Forms.TextBox();
+            this.labelPort = new System.Windows.Forms.Label();
+            this.labelBaud = new System.Windows.Forms.Label();
+            this.serialPort1 = new System.IO.Ports.SerialPort(this.components);
+            this.SuspendLayout();
+            // 
+            // cbPorts
+            // 
+            this.cbPorts.DropDownStyle = System.Windows.Forms.ComboBoxStyle.DropDownList;
+            this.cbPorts.FormattingEnabled = true;
+            this.cbPorts.Location = new System.Drawing.Point(12, 28);
+            this.cbPorts.Name = "cbPorts";
+            this.cbPorts.Size = new System.Drawing.Size(150, 21);
+            this.cbPorts.TabIndex = 0;
+            // 
+            // btnRefresh
+            // 
+            this.btnRefresh.Location = new System.Drawing.Point(168, 26);
+            this.btnRefresh.Name = "btnRefresh";
+            this.btnRefresh.Size = new System.Drawing.Size(75, 23);
+            this.btnRefresh.TabIndex = 1;
+            this.btnRefresh.Text = "Rafraîchir";
+            this.btnRefresh.UseVisualStyleBackColor = true;
+            this.btnRefresh.Click += new System.EventHandler(this.btnRefresh_Click);
+            // 
+            // btnOpenClose
+            // 
+            this.btnOpenClose.Location = new System.Drawing.Point(249, 26);
+            this.btnOpenClose.Name = "btnOpenClose";
+            this.btnOpenClose.Size = new System.Drawing.Size(75, 23);
+            this.btnOpenClose.TabIndex = 2;
+            this.btnOpenClose.Text = "Ouvrir";
+            this.btnOpenClose.UseVisualStyleBackColor = true;
+            this.btnOpenClose.Click += new System.EventHandler(this.btnOpenClose_Click);
+            // 
+            // cbBaudRate
+            // 
+            this.cbBaudRate.DropDownStyle = System.Windows.Forms.ComboBoxStyle.DropDownList;
+            this.cbBaudRate.FormattingEnabled = true;
+            this.cbBaudRate.Items.AddRange(new object[] {
+            "9600",
+            "19200",
+            "38400",
+            "57600",
+            "115200"});
+            this.cbBaudRate.Location = new System.Drawing.Point(12, 72);
+            this.cbBaudRate.Name = "cbBaudRate";
+            this.cbBaudRate.Size = new System.Drawing.Size(150, 21);
+            this.cbBaudRate.TabIndex = 3;
+            // 
+            // txtCommand
+            // 
+            this.txtCommand.Location = new System.Drawing.Point(12, 116);
+            this.txtCommand.Name = "txtCommand";
+            this.txtCommand.Size = new System.Drawing.Size(312, 20);
+            this.txtCommand.TabIndex = 4;
+            // 
+            // btnSend
+            // 
+            this.btnSend.Location = new System.Drawing.Point(330, 114);
+            this.btnSend.Name = "btnSend";
+            this.btnSend.Size = new System.Drawing.Size(75, 23);
+            this.btnSend.TabIndex = 5;
+            this.btnSend.Text = "Envoyer";
+            this.btnSend.UseVisualStyleBackColor = true;
+            this.btnSend.Click += new System.EventHandler(this.btnSend_Click);
+            // 
+            // txtLog
+            // 
+            this.txtLog.Location = new System.Drawing.Point(12, 152);
+            this.txtLog.Multiline = true;
+            this.txtLog.Name = "txtLog";
+            this.txtLog.ScrollBars = System.Windows.Forms.ScrollBars.Vertical;
+            this.txtLog.Size = new System.Drawing.Size(776, 286);
+            this.txtLog.TabIndex = 6;
+            // 
+            // labelPort
+            // 
+            this.labelPort.AutoSize = true;
+            this.labelPort.Location = new System.Drawing.Point(12, 9);
+            this.labelPort.Name = "labelPort";
+            this.labelPort.Size = new System.Drawing.Size(54, 13);
+            this.labelPort.TabIndex = 7;
+            this.labelPort.Text = "Port série:";
+            // 
+            // labelBaud
+            // 
+            this.labelBaud.AutoSize = true;
+            this.labelBaud.Location = new System.Drawing.Point(12, 56);
+            this.labelBaud.Name = "labelBaud";
+            this.labelBaud.Size = new System.Drawing.Size(56, 13);
+            this.labelBaud.TabIndex = 8;
+            this.labelBaud.Text = "Baud rate:";
+            // 
+            // serialPort1
+            // 
+            this.serialPort1.DataReceived += new System.IO.Ports.SerialDataReceivedEventHandler(this.serialPort1_DataReceived);
+            // 
+            // Form1
+            // 
+            this.AutoScaleDimensions = new System.Drawing.SizeF(96F, 96F);
+            this.AutoScaleMode = System.Windows.Forms.AutoScaleMode.Dpi;
+            this.BackColor = System.Drawing.SystemColors.ControlDarkDark;
+            this.ClientSize = new System.Drawing.Size(945, 529);
+            this.Controls.Add(this.labelBaud);
+            this.Controls.Add(this.labelPort);
+            this.Controls.Add(this.txtLog);
+            this.Controls.Add(this.btnSend);
+            this.Controls.Add(this.txtCommand);
+            this.Controls.Add(this.cbBaudRate);
+            this.Controls.Add(this.btnOpenClose);
+            this.Controls.Add(this.btnRefresh);
+            this.Controls.Add(this.cbPorts);
+            this.Font = new System.Drawing.Font("Microsoft Sans Serif", 8.25F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, ((byte)(0)));
+            this.Name = "Form1";
+            this.Text = "Solnir";
+            this.FormClosing += new System.Windows.Forms.FormClosingEventHandler(this.Form1_FormClosing);
+            this.Load += new System.EventHandler(this.Form1_Load);
+            this.ResumeLayout(false);
+            this.PerformLayout();
+
+        }
+
+        #endregion
+
+        private System.Windows.Forms.ComboBox cbPorts;
+        private System.Windows.Forms.Button btnRefresh;
+        private System.Windows.Forms.Button btnOpenClose;
+        private System.Windows.Forms.ComboBox cbBaudRate;
+        private System.Windows.Forms.TextBox txtCommand;
+        private System.Windows.Forms.Button btnSend;
+        private System.Windows.Forms.TextBox txtLog;
+        private System.Windows.Forms.Label labelPort;
+        private System.Windows.Forms.Label labelBaud;
+        private System.IO.Ports.SerialPort serialPort1;
+    }
+}
+

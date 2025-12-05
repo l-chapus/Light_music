@@ -1,0 +1,10 @@
+C:\Users\diabo\Desktop\Github\Light\ApplicationPC\Solnir\Solnir\bin\Debug\Solnir.exe.config
+C:\Users\diabo\Desktop\Github\Light\ApplicationPC\Solnir\Solnir\bin\Debug\Solnir.exe
+C:\Users\diabo\Desktop\Github\Light\ApplicationPC\Solnir\Solnir\bin\Debug\Solnir.pdb
+C:\Users\diabo\Desktop\Github\Light\ApplicationPC\Solnir\Solnir\obj\Debug\Solnir.csproj.AssemblyReference.cache
+C:\Users\diabo\Desktop\Github\Light\ApplicationPC\Solnir\Solnir\obj\Debug\Solnir.Properties.Resources.resources
+C:\Users\diabo\Desktop\Github\Light\ApplicationPC\Solnir\Solnir\obj\Debug\Solnir.csproj.GenerateResource.cache
+C:\Users\diabo\Desktop\Github\Light\ApplicationPC\Solnir\Solnir\obj\Debug\Solnir.csproj.CoreCompileInputs.cache
+C:\Users\diabo\Desktop\Github\Light\ApplicationPC\Solnir\Solnir\obj\Debug\Solnir.exe
+C:\Users\diabo\Desktop\Github\Light\ApplicationPC\Solnir\Solnir\obj\Debug\Solnir.pdb
+C:\Users\diabo\Desktop\Github\Light\ApplicationPC\Solnir\Solnir\obj\Debug\Solnir.Form1.resources
