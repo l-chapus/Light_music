@@ -1,0 +1,218 @@
+﻿using System;
+using System.Collections.Generic;
+using System.ComponentModel;
+using System.Data;
+using System.Drawing;
+using System.Linq;
+using System.Text;
+using System.Threading.Tasks;
+using System.Windows.Forms;
+using System.Drawing.Drawing2D;
+
+namespace Solnir
+{
+    public class HomeForm : Form
+    {
+        private Button btnOpenMain;
+        private Panel panelContent;
+        private Button btnAddElement;
+        private Form1 embeddedMain;
+
+        public HomeForm()
+        {
+            InitializeComponent();
+        }
+
+        private void InitializeComponent()
+        {
+            this.btnOpenMain = new System.Windows.Forms.Button();
+            this.panelContent = new System.Windows.Forms.Panel();
+            this.btnAddElement = new System.Windows.Forms.Button();
+            this.panelContent.SuspendLayout();
+            this.SuspendLayout();
+            // 
+            // btnOpenMain
+            // 
+            this.btnOpenMain.Anchor = System.Windows.Forms.AnchorStyles.None;
+            this.btnOpenMain.Location = new System.Drawing.Point(556, 178);
+            this.btnOpenMain.Name = "btnOpenMain";
+            this.btnOpenMain.Size = new System.Drawing.Size(150, 50);
+            this.btnOpenMain.TabIndex = 0;
+            this.btnOpenMain.Text = "Ouvrir l\'application";
+            this.btnOpenMain.UseVisualStyleBackColor = true;
+            this.btnOpenMain.Click += new System.EventHandler(this.btnOpenMain_Click);
+            // 
+            // panelContent
+            // 
+            this.panelContent.BackColor = System.Drawing.Color.FromArgb(((int)(((byte)(7)))), ((int)(((byte)(7)))), ((int)(((byte)(7)))));
+            this.panelContent.Controls.Add(this.btnAddElement);
+            this.panelContent.Controls.Add(this.btnOpenMain);
+            this.panelContent.Dock = System.Windows.Forms.DockStyle.Fill;
+            this.panelContent.Location = new System.Drawing.Point(0, 0);
+            this.panelContent.Name = "panelContent";
+            this.panelContent.Size = new System.Drawing.Size(1295, 612);
+            this.panelContent.TabIndex = 2;
+            // 
+            // btnAddElement
+            // 
+            this.btnAddElement.Anchor = System.Windows.Forms.AnchorStyles.None;
+            this.btnAddElement.BackColor = System.Drawing.Color.FromArgb(((int)(((byte)(17)))), ((int)(((byte)(17)))), ((int)(((byte)(17)))));
+            this.btnAddElement.BackgroundImageLayout = System.Windows.Forms.ImageLayout.None;
+            this.btnAddElement.FlatAppearance.BorderColor = System.Drawing.Color.FromArgb(((int)(((byte)(85)))), ((int)(((byte)(186)))), ((int)(((byte)(224)))));
+            this.btnAddElement.FlatAppearance.BorderSize = 0;
+            this.btnAddElement.FlatStyle = System.Windows.Forms.FlatStyle.Flat;
+            this.btnAddElement.ForeColor = System.Drawing.SystemColors.Highlight;
+            this.btnAddElement.Location = new System.Drawing.Point(825, 303);
+            this.btnAddElement.Name = "btnAddElement";
+            this.btnAddElement.Size = new System.Drawing.Size(159, 128);
+            this.btnAddElement.TabIndex = 1;
+            this.btnAddElement.UseVisualStyleBackColor = false;
+            this.btnAddElement.Click += new System.EventHandler(this.btnAddElement_Click);
+            // 
+            // HomeForm
+            // 
+            this.ClientSize = new System.Drawing.Size(1295, 612);
+            this.Controls.Add(this.panelContent);
+            this.Name = "HomeForm";
+            this.StartPosition = System.Windows.Forms.FormStartPosition.CenterScreen;
+            this.Text = "Solnir";
+            this.Load += new System.EventHandler(this.HomeForm_Load);
+            this.panelContent.ResumeLayout(false);
+            this.ResumeLayout(false);
+
+        }
+
+        private void HomeForm_Load(object sender, EventArgs e)
+        {
+            // Place the open button centered within the panelContent
+            CenterOpenButton();
+
+            // Apply rounded corners and ensure they stay after resize
+            SetRoundedRegion(btnAddElement, 16);
+            btnAddElement.SizeChanged += (s, ev) => { SetRoundedRegion(btnAddElement, 16); btnAddElement.Invalidate(); };
+            btnAddElement.Parent.SizeChanged += (s, ev) => { SetRoundedRegion(btnAddElement, 16); btnAddElement.Invalidate(); };
+            this.Resize += (s, ev) => { SetRoundedRegion(btnAddElement, 16); btnAddElement.Invalidate(); };
+
+            // Draw a custom rounded border in Paint (default border removed)
+            btnAddElement.Paint += BtnAddElement_Paint;
+        }
+
+        private void BtnAddElement_Paint(object sender, PaintEventArgs e)
+        {
+            var btn = sender as Button;
+            if (btn == null)
+                return;
+
+            var rect = new Rectangle(1, 1, btn.Width - 2, btn.Height - 2);
+            int radius = 16;
+
+            e.Graphics.SmoothingMode = SmoothingMode.AntiAlias;
+
+            using (var path = CreateRoundedPath(rect, radius))
+            using (var pen = new Pen(Color.FromArgb(85, 186, 224), 2))
+            {
+                e.Graphics.DrawPath(pen, path);
+            }
+        }
+
+        private GraphicsPath CreateRoundedPath(Rectangle rect, int radius)
+        {
+            var path = new GraphicsPath();
+            int r = radius * 2;
+            path.AddArc(rect.X, rect.Y, r, r, 180, 90);
+            path.AddArc(rect.Right - r, rect.Y, r, r, 270, 90);
+            path.AddArc(rect.Right - r, rect.Bottom - r, r, r, 0, 90);
+            path.AddArc(rect.X, rect.Bottom - r, r, r, 90, 90);
+            path.CloseFigure();
+            return path;
+        }
+
+        private void CenterOpenButton()
+        {
+            btnOpenMain.Location = new Point((this.panelContent.ClientSize.Width - btnOpenMain.Width) / 2,
+                                             (this.panelContent.ClientSize.Height - btnOpenMain.Height) / 2);
+            btnOpenMain.Anchor = AnchorStyles.None;
+        }
+
+        private void btnOpenMain_Click(object sender, EventArgs e)
+        {
+            // Hide home button
+            btnOpenMain.Visible = false;
+            btnAddElement.Visible = false;
+
+            // Create Form1 and embed it inside panelContent
+            if (embeddedMain == null)
+            {
+                embeddedMain = new Form1();
+                embeddedMain.TopLevel = false;
+                embeddedMain.FormBorderStyle = FormBorderStyle.None;
+                embeddedMain.Dock = DockStyle.Fill;
+                // allow Form1 to call back to HomeForm
+                embeddedMain.Tag = this;
+                this.panelContent.Controls.Add(embeddedMain);
+                embeddedMain.Show();
+                embeddedMain.BringToFront();
+            }
+        }
+
+        public void ReturnToHome()
+        {
+            // Remove the embedded main form and show the home button again
+            if (embeddedMain != null)
+            {
+                try
+                {
+                    embeddedMain.Close();
+                    embeddedMain.Dispose();
+                }
+                catch { }
+                this.panelContent.Controls.Remove(embeddedMain);
+                embeddedMain = null;
+            }
+
+            btnOpenMain.Visible = true;
+            btnAddElement.Visible = true;
+            CenterOpenButton();
+        }
+
+        private void btnAddElement_Click(object sender, EventArgs e)
+        {
+            // Hide home button
+            btnOpenMain.Visible = false;
+            btnAddElement.Visible = false;
+
+            // Create Form1 and embed it inside panelContent
+            if (embeddedMain == null)
+            {
+                embeddedMain = new Form1();
+                embeddedMain.TopLevel = false;
+                embeddedMain.FormBorderStyle = FormBorderStyle.None;
+                embeddedMain.Dock = DockStyle.Fill;
+                // allow Form1 to call back to HomeForm
+                embeddedMain.Tag = this;
+                this.panelContent.Controls.Add(embeddedMain);
+                embeddedMain.Show();
+                embeddedMain.BringToFront();
+            }
+
+        }
+
+        private void SetRoundedRegion(Control ctl, int radius)
+        {
+            if (ctl == null || ctl.Width <= 0 || ctl.Height <= 0)
+                return;
+
+            var rect = new Rectangle(0, 0, ctl.Width, ctl.Height);
+            using (var path = new GraphicsPath())
+            {
+                int r = radius * 2;
+                path.AddArc(rect.X, rect.Y, r, r, 180, 90);
+                path.AddArc(rect.Right - r, rect.Y, r, r, 270, 90);
+                path.AddArc(rect.Right - r, rect.Bottom - r, r, r, 0, 90);
+                path.AddArc(rect.X, rect.Bottom - r, r, r, 90, 90);
+                path.CloseFigure();
+                ctl.Region = new Region(path);
+            }
+        }
+    }
+}

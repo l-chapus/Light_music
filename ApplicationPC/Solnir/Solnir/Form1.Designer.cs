@@ -38,6 +38,7 @@
             this.txtLog = new System.Windows.Forms.TextBox();
             this.labelPort = new System.Windows.Forms.Label();
             this.labelBaud = new System.Windows.Forms.Label();
+            this.btnBack = new System.Windows.Forms.Button();
             this.serialPort1 = new System.IO.Ports.SerialPort(this.components);
             this.SuspendLayout();
             // 
@@ -45,14 +46,14 @@
             // 
             this.cbPorts.DropDownStyle = System.Windows.Forms.ComboBoxStyle.DropDownList;
             this.cbPorts.FormattingEnabled = true;
-            this.cbPorts.Location = new System.Drawing.Point(12, 28);
+            this.cbPorts.Location = new System.Drawing.Point(12, 60);
             this.cbPorts.Name = "cbPorts";
             this.cbPorts.Size = new System.Drawing.Size(150, 21);
             this.cbPorts.TabIndex = 0;
             // 
             // btnRefresh
             // 
-            this.btnRefresh.Location = new System.Drawing.Point(168, 26);
+            this.btnRefresh.Location = new System.Drawing.Point(168, 60);
             this.btnRefresh.Name = "btnRefresh";
             this.btnRefresh.Size = new System.Drawing.Size(75, 23);
             this.btnRefresh.TabIndex = 1;
@@ -62,7 +63,7 @@
             // 
             // btnOpenClose
             // 
-            this.btnOpenClose.Location = new System.Drawing.Point(249, 26);
+            this.btnOpenClose.Location = new System.Drawing.Point(249, 60);
             this.btnOpenClose.Name = "btnOpenClose";
             this.btnOpenClose.Size = new System.Drawing.Size(75, 23);
             this.btnOpenClose.TabIndex = 2;
@@ -80,21 +81,21 @@
             "38400",
             "57600",
             "115200"});
-            this.cbBaudRate.Location = new System.Drawing.Point(12, 72);
+            this.cbBaudRate.Location = new System.Drawing.Point(15, 100);
             this.cbBaudRate.Name = "cbBaudRate";
             this.cbBaudRate.Size = new System.Drawing.Size(150, 21);
             this.cbBaudRate.TabIndex = 3;
             // 
             // txtCommand
             // 
-            this.txtCommand.Location = new System.Drawing.Point(12, 116);
+            this.txtCommand.Location = new System.Drawing.Point(15, 141);
             this.txtCommand.Name = "txtCommand";
             this.txtCommand.Size = new System.Drawing.Size(312, 20);
             this.txtCommand.TabIndex = 4;
             // 
             // btnSend
             // 
-            this.btnSend.Location = new System.Drawing.Point(330, 114);
+            this.btnSend.Location = new System.Drawing.Point(378, 138);
             this.btnSend.Name = "btnSend";
             this.btnSend.Size = new System.Drawing.Size(75, 23);
             this.btnSend.TabIndex = 5;
@@ -104,7 +105,8 @@
             // 
             // txtLog
             // 
-            this.txtLog.Location = new System.Drawing.Point(12, 152);
+            this.txtLog.Anchor = System.Windows.Forms.AnchorStyles.None;
+            this.txtLog.Location = new System.Drawing.Point(15, 188);
             this.txtLog.Multiline = true;
             this.txtLog.Name = "txtLog";
             this.txtLog.ScrollBars = System.Windows.Forms.ScrollBars.Vertical;
@@ -114,7 +116,7 @@
             // labelPort
             // 
             this.labelPort.AutoSize = true;
-            this.labelPort.Location = new System.Drawing.Point(12, 9);
+            this.labelPort.Location = new System.Drawing.Point(17, 44);
             this.labelPort.Name = "labelPort";
             this.labelPort.Size = new System.Drawing.Size(54, 13);
             this.labelPort.TabIndex = 7;
@@ -123,11 +125,21 @@
             // labelBaud
             // 
             this.labelBaud.AutoSize = true;
-            this.labelBaud.Location = new System.Drawing.Point(12, 56);
+            this.labelBaud.Location = new System.Drawing.Point(15, 84);
             this.labelBaud.Name = "labelBaud";
             this.labelBaud.Size = new System.Drawing.Size(56, 13);
             this.labelBaud.TabIndex = 8;
             this.labelBaud.Text = "Baud rate:";
+            // 
+            // btnBack
+            // 
+            this.btnBack.Location = new System.Drawing.Point(12, 12);
+            this.btnBack.Name = "btnBack";
+            this.btnBack.Size = new System.Drawing.Size(75, 23);
+            this.btnBack.TabIndex = 9;
+            this.btnBack.Text = "Retour";
+            this.btnBack.UseVisualStyleBackColor = true;
+            this.btnBack.Click += new System.EventHandler(this.btnBack_Click);
             // 
             // serialPort1
             // 
@@ -148,6 +160,7 @@
             this.Controls.Add(this.btnOpenClose);
             this.Controls.Add(this.btnRefresh);
             this.Controls.Add(this.cbPorts);
+            this.Controls.Add(this.btnBack);
             this.Font = new System.Drawing.Font("Microsoft Sans Serif", 8.25F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, ((byte)(0)));
             this.Name = "Form1";
             this.Text = "Solnir";
@@ -169,6 +182,7 @@
         private System.Windows.Forms.TextBox txtLog;
         private System.Windows.Forms.Label labelPort;
         private System.Windows.Forms.Label labelBaud;
+        private System.Windows.Forms.Button btnBack;
         private System.IO.Ports.SerialPort serialPort1;
     }
 }

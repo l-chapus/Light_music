@@ -8,3 +8,4 @@ C:\Users\diabo\Desktop\Github\Light\ApplicationPC\Solnir\Solnir\obj\Debug\Solnir
 C:\Users\diabo\Desktop\Github\Light\ApplicationPC\Solnir\Solnir\obj\Debug\Solnir.exe
 C:\Users\diabo\Desktop\Github\Light\ApplicationPC\Solnir\Solnir\obj\Debug\Solnir.pdb
 C:\Users\diabo\Desktop\Github\Light\ApplicationPC\Solnir\Solnir\obj\Debug\Solnir.Form1.resources
+C:\Users\diabo\Desktop\Github\Light\ApplicationPC\Solnir\Solnir\obj\Debug\Solnir.HomeForm.resources

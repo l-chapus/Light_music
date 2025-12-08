@@ -1,0 +1,60 @@
+﻿using System;
+using System.Collections.Generic;
+using System.ComponentModel;
+using System.Data;
+using System.Drawing;
+using System.Linq;
+using System.Text;
+using System.Threading.Tasks;
+using System.Windows.Forms;
+
+namespace Solnir
+{
+    public class HomeForm : Form
+    {
+        private Button btnOpenMain;
+
+        public HomeForm()
+        {
+            InitializeComponent();
+        }
+
+        private void InitializeComponent()
+        {
+            this.btnOpenMain = new System.Windows.Forms.Button();
+            this.SuspendLayout();
+            // 
+            // btnOpenMain
+            // 
+            this.btnOpenMain.Location = new System.Drawing.Point(100, 50);
+            this.btnOpenMain.Name = "btnOpenMain";
+            this.btnOpenMain.Size = new System.Drawing.Size(150, 50);
+            this.btnOpenMain.TabIndex = 0;
+            this.btnOpenMain.Text = "Ouvrir l'application";
+            this.btnOpenMain.UseVisualStyleBackColor = true;
+            this.btnOpenMain.Click += new System.EventHandler(this.btnOpenMain_Click);
+            // 
+            // HomeForm
+            // 
+            this.ClientSize = new System.Drawing.Size(350, 150);
+            this.Controls.Add(this.btnOpenMain);
+            this.Name = "HomeForm";
+            this.Text = "Accueil";
+            this.StartPosition = FormStartPosition.CenterScreen;
+            this.ResumeLayout(false);
+        }
+
+        private void btnOpenMain_Click(object sender, EventArgs e)
+        {
+            var main = new Form1();
+            main.Show();
+            this.Hide();
+
+            main.FormClosed += (s, args) =>
+            {
+                // When main form closes, show home again or exit
+                this.Show();
+            };
+        }
+    }
+}

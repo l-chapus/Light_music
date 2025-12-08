@@ -1,0 +1,165 @@
+﻿using System;
+using System.Collections.Generic;
+using System.ComponentModel;
+using System.Data;
+using System.Drawing;
+using System.Linq;
+using System.Text;
+using System.Threading.Tasks;
+using System.Windows.Forms;
+
+namespace Solnir
+{
+    public class HomeForm : Form
+    {
+        private Button btnOpenMain;
+        private Button btnBack;
+        private Panel panelContent;
+        private Button btnAddElement;
+        private Form1 embeddedMain;
+
+        public HomeForm()
+        {
+            InitializeComponent();
+        }
+
+        private void InitializeComponent()
+        {
+            this.btnOpenMain = new System.Windows.Forms.Button();
+            this.btnBack = new System.Windows.Forms.Button();
+            this.panelContent = new System.Windows.Forms.Panel();
+            this.btnAddElement = new System.Windows.Forms.Button();
+            this.panelContent.SuspendLayout();
+            this.SuspendLayout();
+            // 
+            // btnOpenMain
+            // 
+            this.btnOpenMain.Anchor = System.Windows.Forms.AnchorStyles.None;
+            this.btnOpenMain.Location = new System.Drawing.Point(556, 178);
+            this.btnOpenMain.Name = "btnOpenMain";
+            this.btnOpenMain.Size = new System.Drawing.Size(150, 50);
+            this.btnOpenMain.TabIndex = 0;
+            this.btnOpenMain.Text = "Ouvrir l\'application";
+            this.btnOpenMain.UseVisualStyleBackColor = true;
+            this.btnOpenMain.Click += new System.EventHandler(this.btnOpenMain_Click);
+            // 
+            // btnBack
+            // 
+            this.btnBack.Location = new System.Drawing.Point(12, 12);
+            this.btnBack.Name = "btnBack";
+            this.btnBack.Size = new System.Drawing.Size(75, 23);
+            this.btnBack.TabIndex = 1;
+            this.btnBack.Text = "Retour";
+            this.btnBack.UseVisualStyleBackColor = true;
+            this.btnBack.Visible = false;
+            this.btnBack.Click += new System.EventHandler(this.btnBack_Click);
+            // 
+            // panelContent
+            // 
+            this.panelContent.BackColor = System.Drawing.Color.FromArgb(((int)(((byte)(7)))), ((int)(((byte)(7)))), ((int)(((byte)(7)))));
+            this.panelContent.Controls.Add(this.btnAddElement);
+            this.panelContent.Controls.Add(this.btnOpenMain);
+            this.panelContent.Dock = System.Windows.Forms.DockStyle.Fill;
+            this.panelContent.Location = new System.Drawing.Point(0, 0);
+            this.panelContent.Name = "panelContent";
+            this.panelContent.Size = new System.Drawing.Size(1295, 612);
+            this.panelContent.TabIndex = 2;
+            // 
+            // btnAddElement
+            // 
+            this.btnAddElement.Anchor = System.Windows.Forms.AnchorStyles.None;
+            this.btnAddElement.Location = new System.Drawing.Point(714, 332);
+            this.btnAddElement.Name = "btnAddElement";
+            this.btnAddElement.Size = new System.Drawing.Size(159, 128);
+            this.btnAddElement.TabIndex = 1;
+            this.btnAddElement.UseVisualStyleBackColor = true;
+            // 
+            // HomeForm
+            // 
+            this.ClientSize = new System.Drawing.Size(1295, 612);
+            this.Controls.Add(this.btnBack);
+            this.Controls.Add(this.panelContent);
+            this.Name = "HomeForm";
+            this.StartPosition = System.Windows.Forms.FormStartPosition.CenterScreen;
+            this.Text = "Solnir";
+            this.Load += new System.EventHandler(this.HomeForm_Load);
+            this.panelContent.ResumeLayout(false);
+            this.ResumeLayout(false);
+
+        }
+
+        private void HomeForm_Load(object sender, EventArgs e)
+        {
+            // Place the open button centered within the panelContent
+            CenterOpenButton();
+            this.panelContent.Controls.Add(btnOpenMain);
+        }
+
+        private void CenterOpenButton()
+        {
+            btnOpenMain.Location = new Point((this.panelContent.ClientSize.Width - btnOpenMain.Width) / 2,
+                                             (this.panelContent.ClientSize.Height - btnOpenMain.Height) / 2);
+            btnOpenMain.Anchor = AnchorStyles.None;
+        }
+
+        private void btnOpenMain_Click(object sender, EventArgs e)
+        {
+            // Hide home button and show back button
+            btnOpenMain.Visible = false;
+            btnBack.Visible = true;
+
+            // Create Form1 and embed it inside panelContent
+            if (embeddedMain == null)
+            {
+                embeddedMain = new Form1();
+                embeddedMain.TopLevel = false;
+                embeddedMain.FormBorderStyle = FormBorderStyle.None;
+                embeddedMain.Dock = DockStyle.Fill;
+                this.panelContent.Controls.Add(embeddedMain);
+                embeddedMain.Show();
+            }
+        }
+
+        private void btnBack_Click(object sender, EventArgs e)
+        {
+            // Remove the embedded main form and show the home button again
+            if (embeddedMain != null)
+            {
+                try
+                {
+                    embeddedMain.Close();
+                    embeddedMain.Dispose();
+                }
+                catch { }
+                this.panelContent.Controls.Remove(embeddedMain);
+                embeddedMain = null;
+            }
+
+            btnBack.Visible = false;
+            btnOpenMain.Visible = true;
+            CenterOpenButton();
+        }
+
+        private void btnAddElement_Click(object sender, EventArgs e)
+        {
+            // Remove the embedded main form and show the home button again
+            if (embeddedMain != null)
+            {
+                try
+                {
+                    embeddedMain.Close();
+                    embeddedMain.Dispose();
+                }
+                catch { }
+                this.panelContent.Controls.Remove(embeddedMain);
+                embeddedMain = null;
+            }
+
+            btnBack.Visible = false;
+            btnOpenMain.Visible = true;
+            CenterOpenButton();
+        }
+   
+    }
+    
+}
